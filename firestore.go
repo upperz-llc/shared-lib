@@ -2,14 +2,51 @@ package sharedlib
 
 import (
 	"context"
+	"errors"
 	"log"
 	"time"
 
 	"cloud.google.com/go/firestore"
 	firebase "firebase.google.com/go"
+	"google.golang.org/api/iterator"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
+
+type FirestoreAlarm struct {
+	ID              string    `firestore:"id"`
+	Type            int       `firestore:"type"`
+	ClientID        string    `firestore:"client_id"`
+	Acked           bool      `firestore:"acked"`
+	Active          bool      `firestore:"active"`
+	CreatedAt       time.Time `firestore:"created_at,omitempty"`
+	ClosedAt        time.Time `firestore:"closed_at,omitempty"`
+	AckedAt         time.Time `firestore:"acked_at,omitempty"`
+	AckedBy         string    `firestore:"acked_by,omitempty"`
+	AckedCheckCount int       `firestore:"acked_check_count,omitempty"`
+}
+
+func (fa *FirestoreAlarm) toAlarm() Alarm {
+	return Alarm{
+		ID:              fa.ID,
+		Type:            fa.Type,
+		ClientID:        fa.ClientID,
+		CreatedAt:       fa.CreatedAt,
+		ClosedAt:        fa.ClosedAt,
+		AckedAt:         fa.AckedAt,
+		AckedBy:         fa.AckedBy,
+		Active:          fa.Active,
+		AckedCheckCount: fa.AckedCheckCount,
+		Acked:           fa.Acked,
+	}
+}
+
+type FirestoreAlarmTimeline struct {
+	ID        string    `firestore:"id"`
+	Type      int       `firestore:"type"`
+	CreatedAt time.Time `firestore:"created_at"`
+	ClosedAt  time.Time `firestore:"closed_at,omitempty"`
+}
 
 type FirestoreDevice struct {
 	ClientID         string       `firestore:"client_id"`
@@ -70,6 +107,157 @@ type FirebaseDB struct {
 	DB *firestore.Client
 }
 
+// ****************** ALARM ***********************
+
+func (fdb *FirebaseDB) CreateAlarmConnection(ctx context.Context, clientID string) (*Alarm, error) {
+	alarmID := generateRandomString(20)
+
+	alarm := FirestoreAlarm{
+		ID:        alarmID,
+		Type:      Connection,
+		ClientID:  clientID,
+		CreatedAt: time.Now(),
+		Active:    true,
+	}
+
+	storedAlarm, err := fdb.QueryAlarm(ctx, clientID, Connection)
+	if err != nil {
+		return nil, err
+	}
+
+	// alarm already active
+	if storedAlarm != nil {
+		return nil, errors.New("alarm already active")
+	}
+
+	_, err = fdb.DB.Collection("alarms").Doc(alarmID).Set(ctx, alarm)
+	if err != nil {
+		return nil, err
+	}
+
+	returnAlarm := alarm.toAlarm()
+	return &returnAlarm, nil
+}
+
+func (fdb *FirebaseDB) AddNewAlarmToAlarmTimeline(ctx context.Context, alarm Alarm) error {
+	docref := fdb.DB.Collection("devices").Doc(alarm.ClientID).Collection("alarm_timeline").Doc(alarm.ID)
+
+	_, err := docref.Create(ctx, FirestoreAlarmTimeline{
+		ID:        alarm.ID,
+		Type:      alarm.Type,
+		CreatedAt: alarm.CreatedAt,
+	})
+
+	return err
+}
+
+func (fdb *FirebaseDB) DeleteAlarm(ctx context.Context, alarm *Alarm) error {
+	// TODO : should this be deleted?
+	// _, err := f.DB.Collection("alarms").Doc(alarmID).Delete(ctx)
+	alarm.ClosedAt = time.Now()
+	alarm.Active = false
+	_, err := fdb.DB.Collection("alarms").Doc(alarm.ID).Update(ctx, []firestore.Update{
+		{
+			Path:  "closed_at",
+			Value: alarm.ClosedAt,
+		},
+		{
+			Path:  "active",
+			Value: alarm.Active,
+		},
+	})
+	return err
+}
+
+func (fdb *FirebaseDB) GetAlarm(ctx context.Context, alarmID string) (*Alarm, error) {
+	firestoreAlarm, err := fdb.getAlarm(ctx, alarmID)
+	if err != nil || firestoreAlarm == nil {
+		return nil, err
+	}
+
+	alarm := firestoreAlarm.toAlarm()
+	return &alarm, nil
+}
+
+func (fdb *FirebaseDB) IncrementAlarmAckCheckCount(ctx context.Context, alarmID string) error {
+	_, err := fdb.DB.Collection("alarms").Doc(alarmID).Update(ctx, []firestore.Update{
+		{
+			Path:  "acked_check_count",
+			Value: firestore.Increment(1),
+		},
+	})
+
+	return err
+}
+
+func (fdb *FirebaseDB) QueryAlarm(ctx context.Context, clientID string, alarmType AlarmType) (*Alarm, error) {
+	alarms := make([]FirestoreAlarm, 0)
+	iter := fdb.DB.Collection("alarms").Where("client_id", "==", clientID).Where("type", "==", alarmType).Where("active", "==", true).Documents(ctx)
+	for {
+		doc, err := iter.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+
+		var alarm FirestoreAlarm
+		err = doc.DataTo(&alarm)
+		if err != nil {
+			return nil, err
+		}
+
+		alarms = append(alarms, alarm)
+	}
+
+	// no alarms returned
+	if len(alarms) == 0 {
+		return nil, nil
+	}
+	// too many alarms returned
+	if len(alarms) > 1 {
+		return nil, errors.New("too many alarms returned")
+	}
+
+	returnAlarm := alarms[0].toAlarm()
+	return &returnAlarm, nil
+}
+
+func (fdb *FirebaseDB) UpdateAlarmTimelineWithClosedAt(ctx context.Context, alarm Alarm) error {
+	docref := fdb.DB.Collection("devices").Doc(alarm.ClientID).Collection("alarm_timeline").Doc(alarm.ID)
+
+	_, err := docref.Update(ctx, []firestore.Update{
+		{
+			Path:  "closed_at",
+			Value: alarm.ClosedAt,
+		},
+	})
+
+	return err
+}
+
+func (fdb *FirebaseDB) getAlarm(ctx context.Context, alarmID string) (*FirestoreAlarm, error) {
+	snapshot, err := fdb.DB.Collection("alarms").Doc(alarmID).Get(ctx)
+	if err != nil {
+		if status.Code(err) == codes.NotFound {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	var alarm FirestoreAlarm
+	if err := snapshot.DataTo(&alarm); err != nil {
+		return nil, err
+	}
+
+	return &alarm, nil
+}
+
+// *************************************************
+
+// ****************** Device ******************
+
 func (fdb *FirebaseDB) GetDeviceOwner(ctx context.Context, deviceID string) (string, error) {
 	docsnapshot, err := fdb.DB.Collection("devices").Doc(deviceID).Get(ctx)
 	if err != nil {
@@ -88,6 +276,8 @@ func (fdb *FirebaseDB) GetDeviceOwner(ctx context.Context, deviceID string) (str
 
 	return val.(string), nil
 }
+
+// ****************************************
 
 func (fdb *FirebaseDB) GetUser(ctx context.Context, uid string) (*User, error) {
 	firestoreUser, err := fdb.getUser(ctx, uid)
