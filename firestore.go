@@ -284,6 +284,17 @@ func (fdb *FirebaseDB) CreateDevice(ctx context.Context, device Device) error {
 	return err
 }
 
+func (fdb *FirebaseDB) GetDevice(ctx context.Context, deviceID string) (*Device, error) {
+	firestoreDevice, err := fdb.getDevice(ctx, deviceID)
+	if err != nil || firestoreDevice == nil {
+		return nil, err
+	}
+
+	device := firestoreDevice.toDevice()
+	return &device, nil
+
+}
+
 func (fdb *FirebaseDB) GetDeviceOwner(ctx context.Context, deviceID string) (string, error) {
 	docsnapshot, err := fdb.DB.Collection("devices").Doc(deviceID).Get(ctx)
 	if err != nil {
@@ -301,6 +312,23 @@ func (fdb *FirebaseDB) GetDeviceOwner(ctx context.Context, deviceID string) (str
 	}
 
 	return val.(string), nil
+}
+
+func (fdb *FirebaseDB) getDevice(ctx context.Context, deviceID string) (*FirestoreDevice, error) {
+	snapshot, err := fdb.DB.Collection("devices").Doc(deviceID).Get(ctx)
+	if err != nil {
+		if status.Code(err) == codes.NotFound {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	var device FirestoreDevice
+	if err := snapshot.DataTo(&device); err != nil {
+		return nil, err
+	}
+
+	return &device, nil
 }
 
 // ****************************************

@@ -18,7 +18,7 @@ type DB interface {
 
 	// Device interface
 	CreateDevice(ctx context.Context, device Device) error
-	GetDevice(ctx context.Context) (*Alarm, error)
+	GetDevice(ctx context.Context, deviceID string) (*Device, error)
 	GetDeviceOwner(ctx context.Context, deviceID string) (string, error)
 
 	// User interface
