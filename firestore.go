@@ -265,6 +265,25 @@ type FirebaseDB struct {
 
 // ****************** Device ******************
 
+func (fdb *FirebaseDB) CreateDevice(ctx context.Context, device Device) error {
+	firestoredevice := FirestoreDevice{
+		ClientID:         device.ClientID,
+		DeviceType:       device.DeviceType,
+		LastSeen:         device.LastSeen,
+		ConnectionStatus: string(device.ConnectionStatus),
+		MonitoringStatus: string(device.MonitoringStatus),
+		FirmwareVersion:  device.FirmwareVersion,
+		Nickname:         device.Nickname,
+		Owner:            device.Owner,
+		BoundDevices:     device.BoundDevices,
+		BoundTo:          device.BoundTo,
+		Config:           device.Config,
+	}
+
+	_, err := fdb.DB.Collection("devices").Doc(firestoredevice.ClientID).Set(ctx, firestoredevice)
+	return err
+}
+
 func (fdb *FirebaseDB) GetDeviceOwner(ctx context.Context, deviceID string) (string, error) {
 	docsnapshot, err := fdb.DB.Collection("devices").Doc(deviceID).Get(ctx)
 	if err != nil {
