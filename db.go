@@ -7,7 +7,6 @@ type DB interface {
 	AddNewAlarmToAlarmTimeline(ctx context.Context, alarm Alarm) error
 	CreateAlarmConnection(ctx context.Context, clientID string) (*Alarm, error) // TODO : Too high level
 	IncrementAlarmAckCheckCount(ctx context.Context, alarmID string) error
-	QueryAlarm(ctx context.Context, clientID string, alarmType AlarmType) (Alarm, error)
 	UpdateAlarmAck(ctx context.Context, alarmID, userUID string) error // TODO : Too high level
 	UpdateAlarmTimelineWithClosedAt(ctx context.Context, alarm Alarm) error
 
@@ -15,6 +14,7 @@ type DB interface {
 	CloseAlarm(ctx context.Context, alarm *Alarm) error // TODO : Too high level
 	DeleteAlarm(ctx context.Context, alarmID string) error
 	GetAlarm(ctx context.Context, alarmID string) (*Alarm, error)
+	QueryAlarm(ctx context.Context, clientID string, alarmType AlarmType) (*Alarm, error)
 
 	// Device interface
 	CreateDevice(ctx context.Context, device Device) error
