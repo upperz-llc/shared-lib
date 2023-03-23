@@ -92,6 +92,24 @@ func (fdb *FirebaseDB) AddNewAlarmToAlarmTimeline(ctx context.Context, alarm Ala
 	return err
 }
 
+func (fdb *FirebaseDB) UpdateAlarmAck(ctx context.Context, alarmID, userUID string) error {
+	_, err := fdb.DB.Collection("alarms").Doc(alarmID).Update(ctx, []firestore.Update{
+		{
+			Path:  "acked_at",
+			Value: time.Now(),
+		},
+		{
+			Path:  "acked_by",
+			Value: userUID,
+		},
+		{
+			Path:  "acked",
+			Value: true,
+		},
+	})
+	return err
+}
+
 func (fdb *FirebaseDB) DeleteAlarm(ctx context.Context, alarmID string) error {
 	_, err := fdb.DB.Collection("alarms").Doc(alarmID).Delete(ctx)
 
