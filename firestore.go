@@ -13,6 +13,8 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+// ****************** ALARM ***********************
+
 type FirestoreAlarm struct {
 	ID              string    `firestore:"id"`
 	Type            int       `firestore:"type"`
@@ -47,67 +49,6 @@ type FirestoreAlarmTimeline struct {
 	CreatedAt time.Time `firestore:"created_at"`
 	ClosedAt  time.Time `firestore:"closed_at,omitempty"`
 }
-
-type FirestoreDevice struct {
-	ClientID         string       `firestore:"client_id"`
-	DeviceType       int          `firestore:"device_type"`
-	LastSeen         time.Time    `firestore:"last_seen"`
-	ConnectionStatus string       `firestore:"connection_status"`
-	MonitoringStatus string       `firestore:"monitoring_status"`
-	FirmwareVersion  string       `firestore:"firmware_version"`
-	Nickname         string       `firestore:"nickname"`
-	Owner            string       `firestore:"owner"`
-	BoundDevices     []string     `firestore:"bound_devices"`
-	BoundTo          string       `firestore:"bound_to"`
-	Config           DeviceConfig `firestore:"config"`
-}
-
-type FirestoreDeviceConfig struct {
-	AlertTemperature   int `firestore:"alert_temperature"`
-	TargetTemperature  int `firestore:"target_temperature"`
-	WarningTemperature int `firestore:"warning_temperature"`
-	TelemetryPeriod    int `firestore:"telemetry_period"`
-}
-
-func (fa *FirestoreDevice) toDevice() Device {
-	return Device{
-		ClientID:         fa.ClientID,
-		DeviceType:       fa.DeviceType,
-		LastSeen:         fa.LastSeen,
-		ConnectionStatus: DeviceConnectionStatus(fa.ConnectionStatus),
-		MonitoringStatus: DeviceMonitoringStatus(fa.MonitoringStatus),
-		FirmwareVersion:  fa.FirmwareVersion,
-		Nickname:         fa.Nickname,
-		Owner:            fa.Owner,
-		BoundDevices:     fa.BoundDevices,
-		BoundTo:          fa.BoundTo,
-		Config:           fa.Config,
-	}
-}
-
-type FirestoreUser struct {
-	Email                string `firestore:"email"`
-	PhoneNumber          string `firestore:"phone_number"`
-	SendSMS              bool   `firestore:"sms_notification"`
-	SendPushNotification bool   `firestore:"push_notification"`
-}
-
-func (fa *FirestoreUser) toUser() User {
-	return User{
-		Email:                fa.Email,
-		PhoneNumber:          fa.PhoneNumber,
-		SendSMS:              fa.SendSMS,
-		SendPushNotification: fa.SendPushNotification,
-	}
-}
-
-// ***********************************************************
-
-type FirebaseDB struct {
-	DB *firestore.Client
-}
-
-// ****************** ALARM ***********************
 
 func (fdb *FirebaseDB) CreateAlarmConnection(ctx context.Context, clientID string) (*Alarm, error) {
 	alarmID := generateRandomString(20)
@@ -151,9 +92,13 @@ func (fdb *FirebaseDB) AddNewAlarmToAlarmTimeline(ctx context.Context, alarm Ala
 	return err
 }
 
-func (fdb *FirebaseDB) DeleteAlarm(ctx context.Context, alarm *Alarm) error {
-	// TODO : should this be deleted?
-	// _, err := f.DB.Collection("alarms").Doc(alarmID).Delete(ctx)
+func (fdb *FirebaseDB) DeleteAlarm(ctx context.Context, alarmID string) error {
+	_, err := fdb.DB.Collection("alarms").Doc(alarmID).Delete(ctx)
+
+	return err
+}
+
+func (fdb *FirebaseDB) CloseAlarm(ctx context.Context, alarm *Alarm) error {
 	alarm.ClosedAt = time.Now()
 	alarm.Active = false
 	_, err := fdb.DB.Collection("alarms").Doc(alarm.ID).Update(ctx, []firestore.Update{
@@ -169,6 +114,7 @@ func (fdb *FirebaseDB) DeleteAlarm(ctx context.Context, alarm *Alarm) error {
 	return err
 }
 
+// GetAlarm placeholder
 func (fdb *FirebaseDB) GetAlarm(ctx context.Context, alarmID string) (*Alarm, error) {
 	firestoreAlarm, err := fdb.getAlarm(ctx, alarmID)
 	if err != nil || firestoreAlarm == nil {
@@ -254,7 +200,68 @@ func (fdb *FirebaseDB) getAlarm(ctx context.Context, alarmID string) (*Firestore
 	return &alarm, nil
 }
 
-// *************************************************
+// ****************** Device *******************
+
+type FirestoreDevice struct {
+	ClientID         string       `firestore:"client_id"`
+	DeviceType       int          `firestore:"device_type"`
+	LastSeen         time.Time    `firestore:"last_seen"`
+	ConnectionStatus string       `firestore:"connection_status"`
+	MonitoringStatus string       `firestore:"monitoring_status"`
+	FirmwareVersion  string       `firestore:"firmware_version"`
+	Nickname         string       `firestore:"nickname"`
+	Owner            string       `firestore:"owner"`
+	BoundDevices     []string     `firestore:"bound_devices"`
+	BoundTo          string       `firestore:"bound_to"`
+	Config           DeviceConfig `firestore:"config"`
+}
+
+type FirestoreDeviceConfig struct {
+	AlertTemperature   int `firestore:"alert_temperature"`
+	TargetTemperature  int `firestore:"target_temperature"`
+	WarningTemperature int `firestore:"warning_temperature"`
+	TelemetryPeriod    int `firestore:"telemetry_period"`
+}
+
+func (fa *FirestoreDevice) toDevice() Device {
+	return Device{
+		ClientID:         fa.ClientID,
+		DeviceType:       fa.DeviceType,
+		LastSeen:         fa.LastSeen,
+		ConnectionStatus: DeviceConnectionStatus(fa.ConnectionStatus),
+		MonitoringStatus: DeviceMonitoringStatus(fa.MonitoringStatus),
+		FirmwareVersion:  fa.FirmwareVersion,
+		Nickname:         fa.Nickname,
+		Owner:            fa.Owner,
+		BoundDevices:     fa.BoundDevices,
+		BoundTo:          fa.BoundTo,
+		Config:           fa.Config,
+	}
+}
+
+// ******************* Users *********************
+
+type FirestoreUser struct {
+	Email                string `firestore:"email"`
+	PhoneNumber          string `firestore:"phone_number"`
+	SendSMS              bool   `firestore:"sms_notification"`
+	SendPushNotification bool   `firestore:"push_notification"`
+}
+
+func (fa *FirestoreUser) toUser() User {
+	return User{
+		Email:                fa.Email,
+		PhoneNumber:          fa.PhoneNumber,
+		SendSMS:              fa.SendSMS,
+		SendPushNotification: fa.SendPushNotification,
+	}
+}
+
+// ***********************************************************
+
+type FirebaseDB struct {
+	DB *firestore.Client
+}
 
 // ****************** Device ******************
 

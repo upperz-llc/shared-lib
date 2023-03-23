@@ -50,17 +50,17 @@ const (
 // TODO : Add telemetry_timeline
 // TODO : Add alarm_timeline
 type Device struct {
-	ClientID         string                 `json:"client_id" firestore:"client_id"`
-	DeviceType       int                    `json:"device_type,omitempty" firestore:"device_type"`
-	LastSeen         time.Time              `json:"last_seen" firestore:"last_seen"`
-	ConnectionStatus DeviceConnectionStatus `json:"connection_status" firestore:"connection_status"`
-	MonitoringStatus DeviceMonitoringStatus `json:"monitoring_status" firestore:"monitoring_status"`
-	FirmwareVersion  string                 `json:"firmware_version" firestore:"firmware_version"`
-	Nickname         string                 `json:"nickname" firestore:"nickname"`
-	Owner            string                 `json:"owner" firestore:"owner"`
-	BoundDevices     []string               `json:"bound_devices,omitempty" firestore:"bound_devices,omitempty"`
-	BoundTo          string                 `json:"bound_to" firestore:"bound_to"`
-	Config           DeviceConfig           `json:"config" firestore:"config"`
+	ClientID         string                 `json:"client_id"`
+	DeviceType       int                    `json:"device_type"`
+	LastSeen         time.Time              `json:"last_seen"`
+	ConnectionStatus DeviceConnectionStatus `json:"connection_status"`
+	MonitoringStatus DeviceMonitoringStatus `json:"monitoring_status"`
+	FirmwareVersion  string                 `json:"firmware_version"`
+	Nickname         string                 `json:"nickname"`
+	Owner            string                 `json:"owner"`
+	BoundDevices     []string               `json:"bound_devices,omitempty"`
+	BoundTo          string                 `json:"bound_to"`
+	Config           DeviceConfig           `json:"config"`
 }
 
 type DeviceConfig struct {
