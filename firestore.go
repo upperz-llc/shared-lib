@@ -260,6 +260,7 @@ func (fa *FirestoreDevice) toDevice() Device {
 // ******************* Users *********************
 
 type FirestoreUser struct {
+	UID                  string `firestore:"uid"`
 	Email                string `firestore:"email"`
 	PhoneNumber          string `firestore:"phone_number"`
 	SendSMS              bool   `firestore:"sms_notification"`
@@ -350,6 +351,24 @@ func (fdb *FirebaseDB) getDevice(ctx context.Context, deviceID string) (*Firesto
 }
 
 // ****************************************
+
+func (fdb *FirebaseDB) AddUser(ctx context.Context, user *User) error {
+	firestoreuser := FirestoreUser{
+		UID:                  user.UID,
+		Email:                user.Email,
+		PhoneNumber:          user.PhoneNumber,
+		SendSMS:              user.SendSMS,
+		SendPushNotification: user.SendPushNotification,
+	}
+
+	_, err := fdb.DB.Collection("users").Doc(firestoreuser.UID).Set(ctx, firestoreuser)
+	return err
+}
+
+func (fdb *FirebaseDB) DeleteUser(ctx context.Context, uid string) error {
+	_, err := fdb.DB.Collection("users").Doc(uid).Delete(ctx)
+	return err
+}
 
 func (fdb *FirebaseDB) GetUser(ctx context.Context, uid string) (*User, error) {
 	firestoreUser, err := fdb.getUser(ctx, uid)

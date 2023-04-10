@@ -22,6 +22,8 @@ type DB interface {
 	GetDeviceOwner(ctx context.Context, deviceID string) (string, error)
 
 	// User interface
+	AddUser(ctx context.Context, user *User) error
+	DeleteUser(ctx context.Context, uid string) error
 	GetUser(ctx context.Context, uid string) (*User, error)
 	GetUserNotificationSettings(ctx context.Context, uid string) (*User, error)
 }
