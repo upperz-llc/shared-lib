@@ -9,20 +9,22 @@ type DB interface {
 	IncrementAlarmAckCheckCount(ctx context.Context, alarmID string) error
 	UpdateAlarmAck(ctx context.Context, alarmID, userUID string) error // TODO : Too high level
 	UpdateAlarmTimelineWithClosedAt(ctx context.Context, alarm Alarm) error
+	CloseAlarm(ctx context.Context, alarm *Alarm) error // TODO : Too high level
+	GetDeviceOwner(ctx context.Context, deviceID string) (string, error)
 
 	// Alarm interface
-	CloseAlarm(ctx context.Context, alarm *Alarm) error // TODO : Too high level
+	CreateAlarm(ctx context.Context, alarm *Alarm) error
 	DeleteAlarm(ctx context.Context, alarmID string) error
 	GetAlarm(ctx context.Context, alarmID string) (*Alarm, error)
 	QueryAlarm(ctx context.Context, clientID string, alarmType AlarmType) (*Alarm, error)
 
 	// Device interface
-	CreateDevice(ctx context.Context, device Device) error
+	CreateDevice(ctx context.Context, device *Device) error
+	DeleteDevice(ctx context.Context, deviceID string) error
 	GetDevice(ctx context.Context, deviceID string) (*Device, error)
-	GetDeviceOwner(ctx context.Context, deviceID string) (string, error)
 
 	// User interface
-	AddUser(ctx context.Context, user *User) error
+	CreateUser(ctx context.Context, user *User) error
 	DeleteUser(ctx context.Context, uid string) error
 	GetUser(ctx context.Context, uid string) (*User, error)
 	GetUserNotificationSettings(ctx context.Context, uid string) (*User, error)
