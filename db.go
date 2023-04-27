@@ -22,6 +22,7 @@ type DB interface {
 	CreateDevice(ctx context.Context, device *Device) error
 	DeleteDevice(ctx context.Context, deviceID string) error
 	GetDevice(ctx context.Context, deviceID string) (*Device, error)
+	UpdateDeviceConnectionStatus(ctx context.Context, deviceID string) error
 
 	// User interface
 	CreateUser(ctx context.Context, user *User) error

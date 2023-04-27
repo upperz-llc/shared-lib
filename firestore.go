@@ -333,6 +333,22 @@ func (fdb *FirebaseDB) GetDeviceOwner(ctx context.Context, deviceID string) (str
 	return val.(string), nil
 }
 
+func (fdb *FirebaseDB) UpdateDeviceConnectionStatus(ctx context.Context, deviceID string, connectionStatus DeviceConnectionStatus) error {
+	docref := fdb.DB.Collection("devices").Doc(deviceID)
+
+	_, err := docref.Update(ctx, []firestore.Update{
+		{
+			Path:  "connection_status",
+			Value: string(connectionStatus),
+		},
+		{
+			Path:  "last_seen",
+			Value: time.Now(),
+		},
+	})
+	return err
+}
+
 func (fdb *FirebaseDB) getDevice(ctx context.Context, deviceID string) (*FirestoreDevice, error) {
 	snapshot, err := fdb.DB.Collection("devices").Doc(deviceID).Get(ctx)
 	if err != nil {
