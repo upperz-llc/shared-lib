@@ -45,6 +45,32 @@ const (
 	UNBIND
 )
 
+type OTAStatus int
+
+const (
+	STARTED OTAStatus = iota
+	NO_NEW_VERSION
+	UPDATING
+	FINISHED
+	FAILED
+)
+
+func (otas OTAStatus) String() string {
+	switch otas {
+	case STARTED:
+		return "started"
+	case NO_NEW_VERSION:
+		return "no new version"
+	case UPDATING:
+		return "updating"
+	case FINISHED:
+		return "finished"
+	case FAILED:
+		return "failed"
+	}
+	return "unknown"
+}
+
 // ***********************************************
 
 // TODO : Add telemetry_timeline
@@ -68,4 +94,16 @@ type DeviceConfig struct {
 	TargetTemperature  int `json:"temperature_target"`
 	WarningTemperature int `json:"temperature_warning"`
 	TelemetryPeriod    int `json:"telemetry_period"`
+}
+
+type DeviceTelemetry struct {
+	CreatedAt   time.Time `json:"created_at"`
+	DeleteAt    time.Time `json:"deleted_at"`
+	Timestamp   int64     `json:"timestamp"`
+	Temperature float64   `json:"temperature"`
+}
+
+type OTATelemetry struct {
+	Timestamp time.Time `json:"timestamp"`
+	Status    OTAStatus `json:"status"`
 }

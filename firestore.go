@@ -234,11 +234,23 @@ type FirestoreDevice struct {
 	Config           DeviceConfig `firestore:"config"`
 }
 
+type FirestoreDeviceTelemetry struct {
+	CreatedAt   time.Time `firestore:"created_at"`
+	DeleteAt    time.Time `firestore:"delete_at"`
+	Timestamp   int64     `firestore:"-"`
+	Temperature float64   `firestore:"temperature"`
+}
+
 type FirestoreDeviceConfig struct {
 	AlertTemperature   int `firestore:"alert_temperature"`
 	TargetTemperature  int `firestore:"target_temperature"`
 	WarningTemperature int `firestore:"warning_temperature"`
 	TelemetryPeriod    int `firestore:"telemetry_period"`
+}
+
+type FirestoreOTATelemetry struct {
+	Timestamp time.Time `firestore:"timestamp"`
+	Status    OTAStatus `firestore:"status"`
 }
 
 func (fa *FirestoreDevice) toDevice() Device {
@@ -256,6 +268,15 @@ func (fa *FirestoreDevice) toDevice() Device {
 		Config:           fa.Config,
 	}
 }
+
+// func (fdt *FirestoreDeviceTelemetry) toDeviceTelemetry() DeviceTelemetry {
+// 	return DeviceTelemetry{
+// 		CreatedAt:   fdt.CreatedAt,
+// 		DeleteAt:    fdt.DeleteAt,
+// 		Timestamp:   fdt.Timestamp,
+// 		Temperature: fdt.Temperature,
+// 	}
+// }
 
 // ******************* Users *********************
 
@@ -283,6 +304,33 @@ type FirebaseDB struct {
 }
 
 // ****************** Device ******************
+
+// TODO : Update to use transactions
+func (fdb *FirebaseDB) AddDeviceTelemetry(ctx context.Context, clientID string, data *DeviceTelemetry) error {
+	firestoredevicetelemetry := FirestoreDeviceTelemetry{
+		CreatedAt:   data.CreatedAt,
+		DeleteAt:    data.DeleteAt,
+		Timestamp:   data.Timestamp,
+		Temperature: data.Temperature,
+	}
+	docref := fdb.DB.Collection("devices").Doc(clientID)
+
+	// add new document to telemetry_timeline
+	if _, _, err := docref.Collection("telemetry_timeline").Add(ctx, firestoredevicetelemetry); err != nil {
+		return err
+	}
+
+	if _, err := docref.Update(ctx, []firestore.Update{
+		{
+			Path:  "last_seen",
+			Value: time.Now(),
+		},
+	}); err != nil {
+		return err
+	}
+
+	return nil
+}
 
 func (fdb *FirebaseDB) CreateDevice(ctx context.Context, device Device) error {
 	firestoredevice := FirestoreDevice{
@@ -346,6 +394,44 @@ func (fdb *FirebaseDB) UpdateDeviceConnectionStatus(ctx context.Context, deviceI
 			Value: time.Now(),
 		},
 	})
+	return err
+}
+
+func (fdb *FirebaseDB) UpdateDeviceFirmwareVersion(ctx context.Context, deviceID, firmwareVersion string) error {
+	docref := fdb.DB.Collection("devices").Doc(deviceID)
+
+	_, err := docref.Update(ctx, []firestore.Update{
+		{
+			Path:  "firmware_version",
+			Value: firmwareVersion,
+		},
+		{
+			Path:  "last_seen",
+			Value: time.Now(),
+		},
+	})
+
+	return err
+}
+
+func (fdb *FirebaseDB) UpdateDeviceOTAStatus(ctx context.Context, deviceID string, status OTAStatus, timestamp int64) error {
+	docref := fdb.DB.Collection("devices").Doc(deviceID)
+
+	_, _, err := docref.Collection("ota_timeline").Add(ctx, FirestoreOTATelemetry{
+		Status:    status,
+		Timestamp: time.Unix(0, timestamp),
+	})
+	if err != nil {
+		return err
+	}
+
+	_, err = docref.Update(ctx, []firestore.Update{
+		{
+			Path:  "last_seen",
+			Value: time.Now(),
+		},
+	})
+
 	return err
 }
 
