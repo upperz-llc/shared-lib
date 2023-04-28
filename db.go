@@ -19,7 +19,7 @@ type DB interface {
 	QueryAlarm(ctx context.Context, clientID string, alarmType AlarmType) (*Alarm, error)
 
 	// Device interface
-	AddDeviceTelemetry(ctx context.Context, deviceID string, data DeviceTelemetry) error
+	AddDeviceTelemetry(ctx context.Context, deviceID string, data *DeviceTelemetry) error
 	CreateDevice(ctx context.Context, device *Device) error
 	DeleteDevice(ctx context.Context, deviceID string) error
 	GetDevice(ctx context.Context, deviceID string) (*Device, error)
