@@ -28,7 +28,7 @@ type DB interface {
 	UpdateDeviceOTAStatus(ctx context.Context, deviceID, status string, timestamp int64) error
 
 	// User interface
-	CreateUser(ctx context.Context, user *User) error
+	// CreateUser(ctx context.Context, user *User) error
 	DeleteUser(ctx context.Context, uid string) error
 	GetUser(ctx context.Context, uid string) (*User, error)
 	GetUserNotificationSettings(ctx context.Context, uid string) (*User, error)
