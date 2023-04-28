@@ -13,7 +13,7 @@ type DB interface {
 	GetDeviceOwner(ctx context.Context, deviceID string) (string, error)
 
 	// Alarm interface
-	CreateAlarm(ctx context.Context, alarm *Alarm) error
+	// CreateAlarm(ctx context.Context, alarm *Alarm) error
 	DeleteAlarm(ctx context.Context, alarmID string) error
 	GetAlarm(ctx context.Context, alarmID string) (*Alarm, error)
 	QueryAlarm(ctx context.Context, clientID string, alarmType AlarmType) (*Alarm, error)
