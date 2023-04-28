@@ -51,10 +51,7 @@ type FirestoreAlarmTimeline struct {
 }
 
 func (fdb *FirebaseDB) CreateAlarmConnection(ctx context.Context, clientID string) (*Alarm, error) {
-	alarmID := generateRandomString(20)
-
-	alarm := FirestoreAlarm{
-		ID:        alarmID,
+	alarm := &Alarm{
 		Type:      Connection,
 		ClientID:  clientID,
 		CreatedAt: time.Now(),
@@ -71,13 +68,11 @@ func (fdb *FirebaseDB) CreateAlarmConnection(ctx context.Context, clientID strin
 		return nil, errors.New("alarm already active")
 	}
 
-	_, err = fdb.DB.Collection("alarms").Doc(alarmID).Set(ctx, alarm)
-	if err != nil {
+	if err = fdb.CreateAlarm(ctx, alarm); err != nil {
 		return nil, err
 	}
 
-	returnAlarm := alarm.toAlarm()
-	return &returnAlarm, nil
+	return alarm, nil
 }
 
 func (fdb *FirebaseDB) AddNewAlarmToAlarmTimeline(ctx context.Context, alarm Alarm) error {
@@ -107,6 +102,27 @@ func (fdb *FirebaseDB) UpdateAlarmAck(ctx context.Context, alarmID, userUID stri
 			Value: true,
 		},
 	})
+	return err
+}
+
+func (fdb *FirebaseDB) CreateAlarm(ctx context.Context, alarm *Alarm) error {
+	alarmID := generateRandomString(20)
+	alarm.ID = alarmID
+
+	firestorealarm := FirestoreAlarm{
+		ID:              alarm.ID,
+		Type:            alarm.Type,
+		ClientID:        alarm.ClientID,
+		Acked:           alarm.Acked,
+		Active:          alarm.Active,
+		CreatedAt:       alarm.CreatedAt,
+		ClosedAt:        alarm.ClosedAt,
+		AckedAt:         alarm.AckedAt,
+		AckedBy:         alarm.AckedBy,
+		AckedCheckCount: alarm.AckedCheckCount,
+	}
+
+	_, err := fdb.DB.Collection("alarms").Doc(firestorealarm.ID).Set(ctx, firestorealarm)
 	return err
 }
 
@@ -454,7 +470,7 @@ func (fdb *FirebaseDB) getDevice(ctx context.Context, deviceID string) (*Firesto
 
 // ****************************************
 
-func (fdb *FirebaseDB) AddUser(ctx context.Context, user *User) error {
+func (fdb *FirebaseDB) CreateUser(ctx context.Context, user *User) error {
 	firestoreuser := FirestoreUser{
 		UID:                  user.UID,
 		Email:                user.Email,
