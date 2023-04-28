@@ -332,7 +332,7 @@ func (fdb *FirebaseDB) AddDeviceTelemetry(ctx context.Context, clientID string, 
 	return nil
 }
 
-func (fdb *FirebaseDB) CreateDevice(ctx context.Context, device Device) error {
+func (fdb *FirebaseDB) CreateDevice(ctx context.Context, device *Device) error {
 	firestoredevice := FirestoreDevice{
 		ClientID:         device.ClientID,
 		DeviceType:       device.DeviceType,
