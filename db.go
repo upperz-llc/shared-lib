@@ -23,7 +23,7 @@ type DB interface {
 	CreateDevice(ctx context.Context, device *Device) error
 	// DeleteDevice(ctx context.Context, deviceID string) error
 	GetDevice(ctx context.Context, deviceID string) (*Device, error)
-	UpdateDeviceConnectionStatus(ctx context.Context, deviceID string, connectionStatus DeviceConnectionStatus) error
+	UpdateDeviceConnectionStatus(ctx context.Context, deviceID string, status OTAStatus, timestamp int64) error
 	UpdateDeviceFirmwareVersion(ctx context.Context, deviceID, firmwareVersion string) error
 	UpdateDeviceOTAStatus(ctx context.Context, deviceID, status string, timestamp int64) error
 
