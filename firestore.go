@@ -282,6 +282,7 @@ func (fa *FirestoreDevice) toDevice() Device {
 		Owner:            fa.Owner,
 		BoundDevices:     fa.BoundDevices,
 		BoundTo:          fa.BoundTo,
+		Temperature:      fa.Temperature,
 		Config:           fa.Config,
 	}
 }
