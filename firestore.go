@@ -247,6 +247,7 @@ type FirestoreDevice struct {
 	Owner            string       `firestore:"owner"`
 	BoundDevices     []string     `firestore:"bound_devices"`
 	BoundTo          string       `firestore:"bound_to"`
+	Temperature      float64      `firestore:"temperature"`
 	Config           DeviceConfig `firestore:"config"`
 }
 
@@ -340,6 +341,10 @@ func (fdb *FirebaseDB) AddDeviceTelemetry(ctx context.Context, clientID string, 
 		{
 			Path:  "last_seen",
 			Value: time.Now(),
+		},
+		{
+			Path:  "temperature",
+			Value: firestoredevicetelemetry.Temperature,
 		},
 	}); err != nil {
 		return err

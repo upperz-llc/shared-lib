@@ -86,6 +86,7 @@ type Device struct {
 	Owner            string                 `json:"owner"`
 	BoundDevices     []string               `json:"bound_devices,omitempty"`
 	BoundTo          string                 `json:"bound_to"`
+	Temperature      float64                `json:"temperature"`
 	Config           DeviceConfig           `json:"config"`
 }
 
