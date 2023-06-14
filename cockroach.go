@@ -48,10 +48,10 @@ func (cbd *CockroachDB) CreateUser(ctx context.Context, user User) error {
 	return err
 }
 
-func (cbd *CockroachDB) DeleteUser(ctx context.Context, key string) error {
-	query := `DELETE FROM defaultdb.public.user WHERE id = @id`
+func (cbd *CockroachDB) DeleteUserByUID(ctx context.Context, uid string) error {
+	query := `DELETE FROM defaultdb.public.user WHERE uid = @uid`
 	args := pgx.NamedArgs{
-		"id": key,
+		"uid": uid,
 	}
 
 	_, err := cbd.pool.Exec(ctx, query, args)
