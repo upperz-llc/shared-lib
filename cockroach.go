@@ -48,6 +48,20 @@ func (cbd *CockroachDB) CreateUser(ctx context.Context, user User) error {
 	return err
 }
 
+func (cbd *CockroachDB) DeleteUser(ctx context.Context, key string) error {
+	query := `DELETE FROM defaultdb.public.user WHERE id = @id`
+	args := pgx.NamedArgs{
+		"id": key,
+	}
+
+	_, err := cbd.pool.Exec(ctx, query, args)
+	if err != nil {
+		log.Println(err)
+	}
+
+	return err
+}
+
 func NewCockroachDB(ctx context.Context) (*CockroachDB, error) {
 	dbp := os.Getenv("DB_PASS")
 	dsn := "postgresql://temporary:%s@hefty-tiger-10243.5xj.cockroachlabs.cloud:26257/defaultdb?sslmode=verify-full"
