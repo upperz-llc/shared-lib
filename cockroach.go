@@ -33,12 +33,11 @@ func (cdb *CockroachDB) CreateDeviceTelemetry(ctx context.Context, did string, d
 }
 
 func (cbd *CockroachDB) CreateUser(ctx context.Context, user User) error {
-	query := `INSERT INTO defaultdb.public.user (uid, created_at) VALUES (@uid, @notification_push, @notification_sms, @created_at)`
+	query := `INSERT INTO defaultdb.public.user (uid, email created_at) VALUES (@uid, @email, @created_at)`
 	args := pgx.NamedArgs{
-		"uid":               user.UID,
-		"notification_push": user.SendPushNotification,
-		"notification_sms":  user.SendSMS,
-		"created_at":        time.Unix(time.Now().Unix(), 0),
+		"uid":        user.UID,
+		"email":      user.Email,
+		"created_at": time.Unix(time.Now().Unix(), 0),
 	}
 
 	_, err := cbd.pool.Exec(ctx, query, args)
