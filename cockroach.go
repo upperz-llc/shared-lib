@@ -32,7 +32,7 @@ func (cdb *CockroachDB) CreateDeviceTelemetry(ctx context.Context, did string, d
 	return err
 }
 
-func (cbd *CockroachDB) CreateUser(ctx context.Context, user User) error {
+func (cdb *CockroachDB) CreateUser(ctx context.Context, user User) error {
 	query := `INSERT INTO defaultdb.public.user (uid, email, created_at) VALUES (@uid, @email, @created_at)`
 	args := pgx.NamedArgs{
 		"uid":        user.UID,
@@ -40,7 +40,7 @@ func (cbd *CockroachDB) CreateUser(ctx context.Context, user User) error {
 		"created_at": time.Unix(time.Now().Unix(), 0),
 	}
 
-	_, err := cbd.pool.Exec(ctx, query, args)
+	_, err := cdb.pool.Exec(ctx, query, args)
 	if err != nil {
 		log.Println(err)
 	}
@@ -48,13 +48,33 @@ func (cbd *CockroachDB) CreateUser(ctx context.Context, user User) error {
 	return err
 }
 
-func (cbd *CockroachDB) DeleteUserByUID(ctx context.Context, uid string) error {
+func (cdb *CockroachDB) DeleteUserByUID(ctx context.Context, uid string) error {
 	query := `DELETE FROM defaultdb.public.user WHERE uid = @uid`
 	args := pgx.NamedArgs{
 		"uid": uid,
 	}
 
-	_, err := cbd.pool.Exec(ctx, query, args)
+	_, err := cdb.pool.Exec(ctx, query, args)
+	if err != nil {
+		log.Println(err)
+	}
+
+	return err
+}
+
+// asdadasdadaddadadasdas
+
+func (cdb *CockroachDB) CreateManufacturingData(ctx context.Context, md ManufacturingData) error {
+	query := `INSERT INTO defaultdb.public.device_manufacturing_info (device_id, device_type, manufactured_at, measurement_type, username) VALUES (@device_id, @device_type, @manufactured_at, @measurement_type, @username)`
+	args := pgx.NamedArgs{
+		"device_id":        md.DeviceID,
+		"device_type":      md.DeviceType,
+		"manufactured_at":  time.Unix(time.Now().Unix(), 0),
+		"measurement_type": md.MeasurementType,
+		"username":         md.Username,
+	}
+
+	_, err := cdb.pool.Exec(ctx, query, args)
 	if err != nil {
 		log.Println(err)
 	}
