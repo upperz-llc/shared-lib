@@ -22,6 +22,7 @@ const (
 type ManufacturingData struct {
 	DeviceID        string          `json:"device_id"`
 	Username        string          `json:"username"`
+	Password        string          `json:"password"`
 	ManufacturedAt  time.Time       `json:"manufactured_at"`
 	DeviceType      DeviceType      `json:"device_type"`
 	MeasurementType MeasurementType `json:"measurement_type"`

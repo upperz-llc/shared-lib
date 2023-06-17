@@ -65,13 +65,14 @@ func (cdb *CockroachDB) DeleteUserByUID(ctx context.Context, uid string) error {
 // asdadasdadaddadadasdas
 
 func (cdb *CockroachDB) CreateManufacturingData(ctx context.Context, md ManufacturingData) error {
-	query := `INSERT INTO defaultdb.public.device_manufacturing_info (device_id, device_type, manufactured_at, measurement_type, username) VALUES (@device_id, @device_type, @manufactured_at, @measurement_type, @username)`
+	query := `INSERT INTO defaultdb.public.device_manufacturing_info (device_id, device_type, manufactured_at, measurement_type, username, password) VALUES (@device_id, @device_type, @manufactured_at, @measurement_type, @username, @password)`
 	args := pgx.NamedArgs{
 		"device_id":        md.DeviceID,
 		"device_type":      md.DeviceType,
 		"manufactured_at":  time.Unix(time.Now().Unix(), 0),
 		"measurement_type": md.MeasurementType,
 		"username":         md.Username,
+		"password":         md.Password,
 	}
 
 	_, err := cdb.pool.Exec(ctx, query, args)
