@@ -3,7 +3,7 @@ CREATE TABLE public.device_manufacturing_info (
   device_id STRING(20) NOT NULL,
   device_type INT NULL,
   manufactured_at TIMESTAMPTZ NULL,
-  manufactured_type INT NULL,
+  measurement_type INT NULL,
   username STRING(60) NULL,
   password STRING(120) NULL
 )
