@@ -70,8 +70,5 @@ type SQLDB interface {
 	CreateDeviceTelemetry(ctx context.Context, did string, data DeviceTelemetry) error
 
 	// Manufacturing
-	CreateManufacturingData(ctx context.Context)
-
-	// Authentication
-	CreateAuthentication(ctx context.Context)
+	CreateManufacturingData(ctx context.Context, md ManufacturingData) error
 }
