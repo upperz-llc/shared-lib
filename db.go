@@ -44,7 +44,7 @@ type SQLDB interface {
 	// CloseAlarm(ctx context.Context, alarm *Alarm) error // TODO : Too high level
 	// GetDeviceOwner(ctx context.Context, deviceID string) (string, error)
 
-	GetAuthByDeviceID(ctx context.Context, did string)
+	// GetAuthByDeviceID(ctx context.Context, did string)
 	// // Alarm interface
 	// CreateAlarm(ctx context.Context, alarm *Alarm) error
 	// DeleteAlarm(ctx context.Context, alarmID string) error

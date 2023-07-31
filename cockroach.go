@@ -84,10 +84,19 @@ func (cdb *CockroachDB) CreateManufacturingData(ctx context.Context, md Manufact
 }
 
 func NewCockroachDB(ctx context.Context) (*CockroachDB, error) {
+	dbu := os.Getenv("DB_USERNAME")
 	dbp := os.Getenv("DB_PASS")
-	dsn := "postgresql://temporary:%s@hefty-tiger-10243.5xj.cockroachlabs.cloud:26257/defaultdb?sslmode=verify-full"
+	dbc := os.Getenv("DB_CLUSTER")
+	// dsn := "postgresql://manufacturing:%s@hefty-tiger-10243.5xj.cockroachlabs.cloud:26257/defaultdb?sslmode=verify-full"
+	dsct := "postgresql://%s:%s@%s/defaultdb?sslmode=verify-full"
+	dscs := fmt.Sprintf(dsct, dbu, dbp, dbc)
 
-	pool, err := pgxpool.New(ctx, fmt.Sprintf(dsn, dbp))
+	config, err := pgxpool.ParseConfig(dscs)
+	if err != nil {
+		return nil, err
+	}
+
+	pool, err := pgxpool.NewWithConfig(ctx, config)
 	if err != nil {
 		log.Fatal("failed to create connection pool", err)
 		return nil, err
