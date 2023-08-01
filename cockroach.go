@@ -26,13 +26,14 @@ func (cdb *CockroachDB) GetDevice(ctx context.Context, did string) (*Device, err
 		"device_id": did,
 	}
 
-	device := new(Device)
-	err := cdb.pool.QueryRow(ctx, query, args).Scan(device)
+	rows, err := cdb.pool.Query(ctx, query, args)
 	if err != nil {
 		return nil, err
 	}
 
-	return device, err
+	device, err := pgx.CollectOneRow[Device](rows, pgx.RowToStructByName[Device])
+
+	return &device, err
 }
 
 func (cdb *CockroachDB) UpdateDeviceOwner(ctx context.Context, did, uid string) error {
