@@ -92,7 +92,7 @@ func (cdb *CockroachDB) GetDevice(ctx context.Context, did string) (*Device, err
 }
 
 func (cdb *CockroachDB) UpdateDeviceOwner(ctx context.Context, did, uid string) error {
-	query := `UPDATE defaultdb.public.device (id, owner) VALUES (@id, @owner)`
+	query := `UPDATE defaultdb.public.device SET owner = @owner WHERE id = @id`
 	args := pgx.NamedArgs{
 		"id":    did,
 		"owner": uid,
