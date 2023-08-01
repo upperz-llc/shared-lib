@@ -1,6 +1,8 @@
 package sharedlib
 
-import "time"
+import (
+	"time"
+)
 
 // ********** ENUMS AND CONSTANTS ************
 
@@ -77,17 +79,16 @@ func (otas OTAStatus) String() string {
 // TODO : Add alarm_timeline
 type Device struct {
 	ID               string                 `json:"id"`
-	DeviceType       int                    `json:"device_type"`
+	DeviceType       int64                  `json:"device_type"`
 	LastSeen         time.Time              `json:"last_seen"`
 	ConnectionStatus DeviceConnectionStatus `json:"connection_status"`
 	MonitoringStatus DeviceMonitoringStatus `json:"monitoring_status"`
 	FirmwareVersion  string                 `json:"firmware_version"`
 	Nickname         string                 `json:"nickname"`
 	Owner            string                 `json:"owner"`
-	BoundDevices     []string               `json:"bound_devices,omitempty"`
-	BoundTo          string                 `json:"bound_to"`
-	Temperature      float64                `json:"temperature"`
-	Config           DeviceConfig           `json:"config"`
+	// BoundDevices     []string               `json:"bound_devices,omitempty"`
+	// BoundTo          string                 `json:"bound_to"`
+	Temperature int64 `json:"temperature"`
 }
 
 type DeviceConfig struct {

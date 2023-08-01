@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"golang.org/x/exp/slog"
 )
@@ -19,9 +20,62 @@ type CockroachDB struct {
 }
 
 // ************* DEVICE *****************
+type CockroachDevice struct {
+	ID               pgtype.UUID        `json:"id"`
+	ConnectionStatus pgtype.Text        `json:"connection_status"`
+	DeviceType       pgtype.Int8        `json:"device_type"`
+	FirmwareVersion  pgtype.Text        `json:"firmware_version"`
+	MonitoringStatus pgtype.Text        `json:"monitoring_status"`
+	Nickname         pgtype.Text        `json:"nickname"`
+	Temperature      pgtype.Int8        `json:"temperature"`
+	Owner            pgtype.Text        `json:"owner"`
+	LastSeen         pgtype.Timestamptz `json:"last_seen"`
+}
+
+func (c CockroachDevice) ToDevice() Device {
+	d := Device{}
+	if c.ID.Valid {
+		v, _ := c.ID.Value()
+		d.ID = v.(string)
+	}
+	if c.ConnectionStatus.Valid {
+		v, _ := c.ConnectionStatus.Value()
+		d.ConnectionStatus = DeviceConnectionStatus(v.(string))
+	}
+	if c.DeviceType.Valid {
+		v, _ := c.DeviceType.Value()
+		d.DeviceType = v.(int64)
+	}
+	if c.FirmwareVersion.Valid {
+		v, _ := c.FirmwareVersion.Value()
+		d.FirmwareVersion = v.(string)
+	}
+	if c.LastSeen.Valid {
+		v, _ := c.LastSeen.Value()
+		d.LastSeen = v.(time.Time)
+	}
+	if c.MonitoringStatus.Valid {
+		v, _ := c.MonitoringStatus.Value()
+		d.MonitoringStatus = DeviceMonitoringStatus(v.(string))
+	}
+	if c.Nickname.Valid {
+		v, _ := c.Nickname.Value()
+		d.Nickname = v.(string)
+	}
+	if c.Owner.Valid {
+		v, _ := c.Owner.Value()
+		d.Owner = v.(string)
+	}
+	if c.Temperature.Valid {
+		v, _ := c.Temperature.Value()
+		d.Temperature = v.(int64)
+	}
+
+	return d
+}
 
 func (cdb *CockroachDB) GetDevice(ctx context.Context, did string) (*Device, error) {
-	query := `SELECT * FROM defaultdb.public.device WHERE id = @device_id`
+	query := `SELECT id, connection_status, device_type, firmware_version, monitoring_status, nickname, temperature, owner, last_seen FROM defaultdb.public.device WHERE id = @device_id`
 	args := pgx.NamedArgs{
 		"device_id": did,
 	}
@@ -31,8 +85,9 @@ func (cdb *CockroachDB) GetDevice(ctx context.Context, did string) (*Device, err
 		return nil, err
 	}
 
-	device, err := pgx.CollectOneRow[Device](rows, pgx.RowToStructByName[Device])
+	cockroachdevice, err := pgx.CollectOneRow[CockroachDevice](rows, pgx.RowToStructByPos[CockroachDevice])
 
+	device := cockroachdevice.ToDevice()
 	return &device, err
 }
 
