@@ -10,11 +10,32 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"golang.org/x/exp/slog"
 )
 
 type CockroachDB struct {
-	pool *pgxpool.Pool
+	pool   *pgxpool.Pool
+	logger slog.Logger
 }
+
+// ************* DEVICE *****************
+
+func (cdb *CockroachDB) GetDevice(ctx context.Context, did string) (*Device, error) {
+	query := `SELECT * FROM defaultdb.public.device WHERE id = @device_id`
+	args := pgx.NamedArgs{
+		"device_id": did,
+	}
+
+	device := new(Device)
+	err := cdb.pool.QueryRow(ctx, query, args).Scan(device)
+	if err != nil {
+		return nil, err
+	}
+
+	return device, err
+}
+
+// ************************************
 
 func (cdb *CockroachDB) CreateDeviceTelemetry(ctx context.Context, did string, data DeviceTelemetry) error {
 	query := `INSERT INTO defaultdb.public.temperature (device_id, temperature, timestamp) VALUES (@device_id, @temperature, @timestamp)`

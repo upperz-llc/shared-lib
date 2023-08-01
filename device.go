@@ -76,7 +76,7 @@ func (otas OTAStatus) String() string {
 // TODO : Add telemetry_timeline
 // TODO : Add alarm_timeline
 type Device struct {
-	ClientID         string                 `json:"client_id"`
+	ID               string                 `json:"id"`
 	DeviceType       int                    `json:"device_type"`
 	LastSeen         time.Time              `json:"last_seen"`
 	ConnectionStatus DeviceConnectionStatus `json:"connection_status"`
