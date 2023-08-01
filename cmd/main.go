@@ -17,15 +17,23 @@ func main() {
 	}
 
 	fmt.Println(time.Now().Format(time.RFC3339))
+	i := 1
 
-	now := time.Now()
-	device, err := db.GetDevice(context.TODO(), "9e307763-2683-494d-8234-3e01896d8874")
-	if err != nil {
-		fmt.Println(err)
-	} else {
-		fmt.Println(device)
+	for {
+
+		if i == 10 {
+			break
+		}
+		now := time.Now()
+		device, err := db.GetAuth(context.TODO(), "9e307763-2683-494d-8234-3e01896d8874")
+		if err != nil {
+			fmt.Println(err)
+		} else {
+			fmt.Println(device)
+		}
+		fmt.Println(time.Since(now))
+		i++
 	}
-	fmt.Println(time.Since(now))
 
 	// uid, err := device.ID.Value()
 	// fmt.Println(uid.(string))

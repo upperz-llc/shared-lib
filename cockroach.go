@@ -19,6 +19,76 @@ type CockroachDB struct {
 	logger slog.Logger
 }
 
+// ************ AUTH *******************
+type CockroachAuth struct {
+	ID        pgtype.UUID        `json:"id"`
+	DeviceID  pgtype.UUID        `json:"device_id"`
+	Enabled   pgtype.Bool        `json:"enabled"`
+	Username  pgtype.Text        `json:"username"`
+	Password  pgtype.Text        `json:"password"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+}
+
+func (c CockroachAuth) ToAuth() Auth {
+	d := Auth{}
+	if c.ID.Valid {
+		v, _ := c.ID.Value()
+		d.ID = v.(string)
+	}
+	if c.DeviceID.Valid {
+		v, _ := c.DeviceID.Value()
+		d.DeviceID = v.(string)
+	}
+	if c.CreatedAt.Valid {
+		v, _ := c.CreatedAt.Value()
+		d.CreatedAt = v.(time.Time)
+	}
+	if c.Enabled.Valid {
+		v, _ := c.Enabled.Value()
+		d.Enabled = v.(bool)
+	}
+	if c.Username.Valid {
+		v, _ := c.Username.Value()
+		d.Username = v.(string)
+	}
+	if c.Password.Valid {
+		v, _ := c.Password.Value()
+		d.Password = v.(string)
+	}
+
+	return d
+}
+
+func (cdb *CockroachDB) GetAuth(ctx context.Context, did string) (*Auth, error) {
+	query := `SELECT id, device_id, enabled, username, password, created_at FROM defaultdb.public.auth WHERE device_id = @device_id`
+	args := pgx.NamedArgs{
+		"device_id": did,
+	}
+
+	rows, err := cdb.pool.Query(ctx, query, args)
+	if err != nil {
+		return nil, err
+	}
+
+	cockroachauth, err := pgx.CollectOneRow[CockroachAuth](rows, pgx.RowToStructByPos[CockroachAuth])
+
+	auth := cockroachauth.ToAuth()
+	return &auth, err
+}
+
+// func (cdb *CockroachDB) UpdateDeviceOwner(ctx context.Context, did, uid string) error {
+// 	query := `UPDATE defaultdb.public.device SET owner = @owner WHERE id = @id`
+// 	args := pgx.NamedArgs{
+// 		"id":    did,
+// 		"owner": uid,
+// 	}
+
+// 	_, err := cdb.pool.Exec(ctx, query, args)
+// 	return err
+// }
+
+// **************************************
+
 // ************* DEVICE *****************
 type CockroachDevice struct {
 	ID               pgtype.UUID        `json:"id"`
