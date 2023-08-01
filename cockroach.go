@@ -35,6 +35,17 @@ func (cdb *CockroachDB) GetDevice(ctx context.Context, did string) (*Device, err
 	return device, err
 }
 
+func (cdb *CockroachDB) UpdateDeviceOwner(ctx context.Context, did, uid string) error {
+	query := `UPDATE defaultdb.public.device (id, owner) VALUES (@id, @owner)`
+	args := pgx.NamedArgs{
+		"id":    did,
+		"owner": uid,
+	}
+
+	_, err := cdb.pool.Exec(ctx, query, args)
+	return err
+}
+
 // ************************************
 
 func (cdb *CockroachDB) CreateDeviceTelemetry(ctx context.Context, did string, data DeviceTelemetry) error {

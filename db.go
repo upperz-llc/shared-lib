@@ -55,7 +55,8 @@ type SQLDB interface {
 	// AddDeviceTelemetry(ctx context.Context, deviceID string, data *DeviceTelemetry) error
 	// CreateDevice(ctx context.Context, device *Device) error
 	// // DeleteDevice(ctx context.Context, deviceID string) error
-	GetDevice(ctx context.Context, deviceID string) (*Device, error)
+	GetDevice(ctx context.Context, did string) (*Device, error)
+	UpdateDeviceOwner(ctx context.Context, did, uid string) error
 	// UpdateDeviceConnectionStatus(ctx context.Context, deviceID string, connectionStatus DeviceConnectionStatus) error
 	// UpdateDeviceFirmwareVersion(ctx context.Context, deviceID, firmwareVersion string) error
 	// UpdateDeviceOTAStatus(ctx context.Context, deviceID string, status OTAStatus, timestamp int64) error
