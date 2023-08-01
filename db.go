@@ -36,6 +36,7 @@ import "context"
 
 type SQLDB interface {
 	// Auth
+	GetACL(ctx context.Context, did, topic string) (*ACL, error)
 	GetAuth(ctx context.Context, did string) (*Auth, error)
 	// Alarm interface
 	// AddNewAlarmToAlarmTimeline(ctx context.Context, alarm Alarm) error

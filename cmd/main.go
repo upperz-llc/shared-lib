@@ -25,13 +25,14 @@ func main() {
 			break
 		}
 		now := time.Now()
-		device, err := db.GetAuth(context.TODO(), "9e307763-2683-494d-8234-3e01896d8874")
+		device, err := db.GetACL(context.TODO(), "9e307763-2683-494d-8234-3e01896d8874", "CONFIG/9e307763-2683-494d-8234-3e01896d8874")
 		if err != nil {
 			fmt.Println(err)
 		} else {
 			fmt.Println(device)
 		}
 		fmt.Println(time.Since(now))
+		fmt.Println(device.Allowed)
 		i++
 	}
 

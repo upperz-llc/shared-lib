@@ -2,6 +2,16 @@ package sharedlib
 
 import "time"
 
+type ACL struct {
+	ID        string    `json:"id"`
+	AuthID    string    `json:"auth_id"`
+	DeviceID  string    `json:"device_id"`
+	Allowed   bool      `json:"allowed"`
+	Topic     string    `json:"topic"`
+	Access    string    `json:"Access"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
 // Auth placeholder
 type Auth struct {
 	ID        string    `json:"id"`

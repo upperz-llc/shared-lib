@@ -20,6 +20,68 @@ type CockroachDB struct {
 }
 
 // ************ AUTH *******************
+
+type CockroachACL struct {
+	ID        pgtype.UUID        `json:"id"`
+	AuthID    pgtype.UUID        `json:"auth_id"`
+	DeviceID  pgtype.UUID        `json:"device_id"`
+	Allowed   pgtype.Bool        `json:"allowed"`
+	Topic     pgtype.Text        `json:"topic"`
+	Access    pgtype.Text        `json:"Access"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+}
+
+func (c CockroachACL) ToACL() ACL {
+	d := ACL{}
+	if c.ID.Valid {
+		v, _ := c.ID.Value()
+		d.ID = v.(string)
+	}
+	if c.AuthID.Valid {
+		v, _ := c.AuthID.Value()
+		d.AuthID = v.(string)
+	}
+	if c.DeviceID.Valid {
+		v, _ := c.DeviceID.Value()
+		d.DeviceID = v.(string)
+	}
+	if c.Allowed.Valid {
+		v, _ := c.Allowed.Value()
+		d.Allowed = v.(bool)
+	}
+	if c.Topic.Valid {
+		v, _ := c.Topic.Value()
+		d.Topic = v.(string)
+	}
+	if c.Access.Valid {
+		v, _ := c.Access.Value()
+		d.Access = v.(string)
+	}
+	if c.CreatedAt.Valid {
+		v, _ := c.CreatedAt.Value()
+		d.CreatedAt = v.(time.Time)
+	}
+
+	return d
+}
+
+func (cdb *CockroachDB) GetACL(ctx context.Context, did, topic string) (*ACL, error) {
+	query := `SELECT id, auth_id, device_id, allowed, topic, access, created_at FROM defaultdb.public.acl WHERE device_id = @device_id`
+	args := pgx.NamedArgs{
+		"device_id": did,
+	}
+
+	rows, err := cdb.pool.Query(ctx, query, args)
+	if err != nil {
+		return nil, err
+	}
+
+	cockroachacl, err := pgx.CollectOneRow[CockroachACL](rows, pgx.RowToStructByPos[CockroachACL])
+
+	acl := cockroachacl.ToACL()
+	return &acl, err
+}
+
 type CockroachAuth struct {
 	ID        pgtype.UUID        `json:"id"`
 	DeviceID  pgtype.UUID        `json:"device_id"`
