@@ -2,6 +2,7 @@ package sharedlib
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"math"
@@ -66,14 +67,19 @@ func (c CockroachACL) ToACL() ACL {
 }
 
 func (cdb *CockroachDB) GetACL(ctx context.Context, did, topic string) (*ACL, error) {
-	query := `SELECT id, auth_id, device_id, allowed, topic, access, created_at FROM defaultdb.public.acl WHERE device_id = @device_id`
+	query := `SELECT id, auth_id, device_id, allowed, topic, access, created_at FROM defaultdb.public.acl WHERE device_id = @device_id AND topic = @topic`
 	args := pgx.NamedArgs{
 		"device_id": did,
+		"topic":     topic,
 	}
 
 	rows, err := cdb.pool.Query(ctx, query, args)
 	if err != nil {
 		return nil, err
+	}
+
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil
 	}
 
 	cockroachacl, err := pgx.CollectOneRow[CockroachACL](rows, pgx.RowToStructByPos[CockroachACL])
