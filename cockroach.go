@@ -78,14 +78,14 @@ func (cdb *CockroachDB) GetACL(ctx context.Context, did, topic string) (*ACL, er
 		return nil, err
 	}
 
+	cockroachacl, err := pgx.CollectOneRow[CockroachACL](rows, pgx.RowToStructByPos[CockroachACL])
+
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil
 	}
 
-	cockroachacl, err := pgx.CollectOneRow[CockroachACL](rows, pgx.RowToStructByPos[CockroachACL])
-
 	acl := cockroachacl.ToACL()
-	return &acl, err
+	return &acl, nil
 }
 
 type CockroachAuth struct {
