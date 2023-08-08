@@ -36,6 +36,7 @@ import "context"
 
 type SQLDB interface {
 	// Auth
+	AddAuthAndACLs(ctx context.Context, did, username, password string) error
 	GetACL(ctx context.Context, did, topic string) (*ACL, error)
 	GetAuth(ctx context.Context, did string) (*Auth, error)
 	// Alarm interface
@@ -74,5 +75,6 @@ type SQLDB interface {
 	CreateDeviceTelemetry(ctx context.Context, did string, data DeviceTelemetry) error
 
 	// Manufacturing
+	CreateDeviceAndManufacturingData(ctx context.Context, md ManufacturingData) error
 	CreateManufacturingData(ctx context.Context, md ManufacturingData) error
 }

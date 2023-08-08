@@ -17,24 +17,35 @@ func main() {
 	}
 
 	fmt.Println(time.Now().Format(time.RFC3339))
-	i := 1
+	// i := 1
 
-	for {
+	// for {
 
-		if i == 10 {
-			break
-		}
-		now := time.Now()
-		device, err := db.GetACL(context.TODO(), "9e307763-2683-494d-8234-3e01896d8874", "CONFIG/9e307763-2683-494d-8234-3e01896d8874")
-		if err != nil {
-			fmt.Println(err)
-		} else {
-			fmt.Println(device)
-		}
-		fmt.Println(time.Since(now))
-		fmt.Println(device.Allowed)
-		i++
+	// 	if i == 10 {
+	// 		break
+	// 	}
+	// now := time.Now()
+	err = db.CreateDeviceTelemetry(context.TODO(), "a2d548e1-86c0-4270-b121-21a24fdcaf07", sharedlib.DeviceTelemetry{
+		CreatedAt:   time.Now(),
+		Timestamp:   time.Now().Unix(),
+		Temperature: float64(100),
+	})
+	if err != nil {
+		fmt.Println(err)
+		return
 	}
+	// device, err := db.GetACL(context.TODO(), "9e307763-2683-494d-8234-3e01896d8874", "CONFIG/9e307763-2683-494d-8234-3e01896d8874s")
+	// if err != nil {
+	// 	fmt.Println(err)
+	// }
+	// if device == nil {
+	// 	fmt.Println("not found")
+	// 	return
+	// }
+	// fmt.Println(time.Since(now))
+	// fmt.Println(device.Allowed)
+	// // 	i++
+	// }
 
 	// uid, err := device.ID.Value()
 	// fmt.Println(uid.(string))

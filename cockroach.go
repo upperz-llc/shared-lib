@@ -243,6 +243,21 @@ func (cdb *CockroachDB) UpdateDeviceOwner(ctx context.Context, did, uid string) 
 // ************************************
 
 func (cdb *CockroachDB) CreateDeviceTelemetry(ctx context.Context, did string, data DeviceTelemetry) error {
+	conn, err := cdb.pool.Acquire(ctx)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	defer conn.Release()
+
+	tx, err := conn.BeginTx(ctx, pgx.TxOptions{})
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	fmt.Println(time.Unix(data.Timestamp, 0))
+
 	query := `INSERT INTO defaultdb.public.temperature (device_id, temperature, timestamp) VALUES (@device_id, @temperature, @timestamp)`
 	args := pgx.NamedArgs{
 		"device_id":   did,
@@ -250,12 +265,32 @@ func (cdb *CockroachDB) CreateDeviceTelemetry(ctx context.Context, did string, d
 		"timestamp":   time.Unix(data.Timestamp, 0),
 	}
 
-	_, err := cdb.pool.Exec(ctx, query, args)
+	_, err = tx.Exec(ctx, query, args)
 	if err != nil {
-		log.Println(err)
+		if err := tx.Rollback(ctx); err != nil {
+			return err
+		}
+		return err
 	}
 
-	return err
+	fmt.Println(time.Unix(data.Timestamp, 0))
+
+	query = `UPDATE defaultdb.public.device SET last_seen = @timestamp, temperature = @temperature WHERE id = @id`
+	args = pgx.NamedArgs{
+		"id":          did,
+		"temperature": math.Round(data.Temperature*100) / 100,
+		"timestamp":   time.Unix(data.Timestamp, 0),
+	}
+
+	_, err = tx.Exec(ctx, query, args)
+	if err != nil {
+		if err := tx.Rollback(ctx); err != nil {
+			return err
+		}
+		return err
+	}
+
+	return tx.Commit(ctx)
 }
 
 func (cdb *CockroachDB) CreateUser(ctx context.Context, user User) error {
@@ -307,6 +342,107 @@ func (cdb *CockroachDB) CreateManufacturingData(ctx context.Context, md Manufact
 	}
 
 	return err
+}
+
+func (cdb *CockroachDB) CreateDeviceAndManufacturingData(ctx context.Context, md ManufacturingData) error {
+	conn, err := cdb.pool.Acquire(ctx)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	defer conn.Release()
+
+	tx, err := conn.BeginTx(ctx, pgx.TxOptions{})
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	query := `INSERT INTO defaultdb.public.device (id, device_type) VALUES (@device_id, @device_type)`
+	args := pgx.NamedArgs{
+		"device_id": md.DeviceID,
+	}
+	if _, err := tx.Exec(ctx, query, args); err != nil {
+		return err
+	}
+
+	query = `INSERT INTO defaultdb.public.device_manufacturing_data (id, device_id, device_type, manufactured_at, measurement_type, username, password) VALUES (DEFAULT, @device_id, @device_type, @manufactured_at, @measurement_type, @username, @password) RETURNING id`
+	args = pgx.NamedArgs{
+		"device_id":        md.DeviceID,
+		"device_type":      md.DeviceType,
+		"measurement_type": md.MeasurementType,
+		"username":         md.Username,
+		"password":         md.Password,
+	}
+	if _, err := tx.Exec(ctx, query, args); err != nil {
+		if err := tx.Rollback(ctx); err != nil {
+			return err
+		}
+		return err
+	}
+
+	return tx.Commit(ctx)
+}
+
+func (cdb *CockroachDB) AddAuthAndACLs(ctx context.Context, did, username, password string) error {
+	conn, err := cdb.pool.Acquire(ctx)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	defer conn.Release()
+
+	tx, err := conn.BeginTx(ctx, pgx.TxOptions{})
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	query := `INSERT INTO defaultdb.public.auth (id, device_id, enabled, username, password) VALUES (DEFAULT, @device_id, @enabled, @username, @password) RETURNING id`
+	args := pgx.NamedArgs{
+		"device_id": did,
+		"enabled":   true,
+		"username":  username,
+		"password":  password,
+	}
+	var aid pgtype.UUID
+	if err := tx.QueryRow(ctx, query, args).Scan(&aid); err != nil {
+		return err
+	}
+
+	query = `INSERT INTO defaultdb.public.acl (id, auth_id, device_id, topic, access, allowed) VALUES
+	(DEFAULT, @auth_id, @device_id, @topic1, @access, @allowed),
+	(DEFAULT, @auth_id, @device_id, @topic2, @access, @allowed),
+	(DEFAULT, @auth_id, @device_id, @topic3, @access, @allowed),
+	(DEFAULT, @auth_id, @device_id, @topic4, @access, @allowed),
+	(DEFAULT, @auth_id, @device_id, @topic5, @access, @allowed),
+	(DEFAULT, @auth_id, @device_id, @topic6, @access, @allowed),
+	(DEFAULT, @auth_id, @device_id, @topic7, @access, @allowed),
+	(DEFAULT, @auth_id, @device_id, @topic8, @access, @allowed),
+	(DEFAULT, @auth_id, @device_id, @topic9, @access, @allowed)`
+	args = pgx.NamedArgs{
+		"auth_id":   aid,
+		"device_id": did,
+		"topic1":    fmt.Sprintf("DATA/%s", did),
+		"topic2":    fmt.Sprintf("CMD/%s", did),
+		"topic3":    fmt.Sprintf("BCMD/%s", did),
+		"topic4":    fmt.Sprintf("BCMD/%s/response", did),
+		"topic5":    fmt.Sprintf("CONFIG/%s", did),
+		"topic6":    fmt.Sprintf("STATE/%s", did),
+		"topic7":    fmt.Sprintf("BIRTH/%s", did),
+		"topic8":    fmt.Sprintf("DEATH/%s", did),
+		"topic9":    fmt.Sprintf("LWT/%s", did),
+		"access":    "rw",
+		"allowed":   true,
+	}
+	if _, err := tx.Exec(ctx, query, args); err != nil {
+		if err := tx.Rollback(ctx); err != nil {
+			return err
+		}
+		return err
+	}
+
+	return tx.Commit(ctx)
 }
 
 func NewCockroachDB(ctx context.Context) (*CockroachDB, error) {
