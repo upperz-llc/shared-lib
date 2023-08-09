@@ -25,7 +25,7 @@ func main() {
 	// 		break
 	// 	}
 	// now := time.Now()
-	err = db.UpdateDeviceMonitoringStatus(context.TODO(), "a2d548e1-86c0-4270-b121-21a24fdcaf07", sharedlib.Alerted)
+	err = db.UpdateDeviceConnectionStatus(context.TODO(), "a2d548e1-86c0-4270-b121-21a24fdcaf07", sharedlib.Disconnected)
 	if err != nil {
 		fmt.Println(err)
 		return

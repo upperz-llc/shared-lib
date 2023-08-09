@@ -225,6 +225,10 @@ func (cdb *CockroachDB) GetDevice(ctx context.Context, did string) (*Device, err
 
 	cockroachdevice, err := pgx.CollectOneRow[CockroachDevice](rows, pgx.RowToStructByPos[CockroachDevice])
 
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil
+	}
+
 	device := cockroachdevice.ToDevice()
 	return &device, err
 }
@@ -261,6 +265,36 @@ func (cdb *CockroachDB) UpdateDeviceFirmwareVersion(ctx context.Context, did, fi
 		"id":               did,
 		"firmware_version": firmwareVersion,
 		"timestamp":        time.Now(),
+	}
+
+	_, err = tx.Exec(ctx, query, args)
+	if err != nil {
+		if err := tx.Rollback(ctx); err != nil {
+			return err
+		}
+		return err
+	}
+
+	return tx.Commit(ctx)
+}
+
+func (cdb *CockroachDB) UpdateDeviceConnectionStatus(ctx context.Context, did string, status DeviceConnectionStatus) error {
+	conn, err := cdb.pool.Acquire(ctx)
+	if err != nil {
+		return err
+	}
+	defer conn.Release()
+
+	tx, err := conn.BeginTx(ctx, pgx.TxOptions{})
+	if err != nil {
+		return err
+	}
+
+	query := `UPDATE defaultdb.public.device SET last_seen = @timestamp, connection_status = @connection_status WHERE id = @id`
+	args := pgx.NamedArgs{
+		"id":                did,
+		"timestamp":         time.Now(),
+		"connection_status": status,
 	}
 
 	_, err = tx.Exec(ctx, query, args)
