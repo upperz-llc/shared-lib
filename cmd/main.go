@@ -25,10 +25,23 @@ func main() {
 	// 		break
 	// 	}
 	// now := time.Now()
-	err = db.UpdateDeviceConnectionStatus(context.TODO(), "a2d548e1-86c0-4270-b121-21a24fdcaf07", sharedlib.Disconnected)
+	devices, err := db.GetDevicesByOwner(context.TODO(), "U1uhP6ekkuMYa4VDiTrrGZOtQ3G3")
 	if err != nil {
 		fmt.Println(err)
 		return
+	}
+
+	now := time.Now()
+	devices, err = db.GetDevicesByOwner(context.TODO(), "U1uhP6ekkuMYa4VDiTrrGZOtQ3G3")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Println(time.Since(now))
+
+	for _, v := range devices {
+		fmt.Println(v)
+
 	}
 	// device, err := db.GetACL(context.TODO(), "9e307763-2683-494d-8234-3e01896d8874", "CONFIG/9e307763-2683-494d-8234-3e01896d8874s")
 	// if err != nil {

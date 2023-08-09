@@ -60,6 +60,7 @@ type SQLDB interface {
 	// CreateDevice(ctx context.Context, device *Device) error
 	// // DeleteDevice(ctx context.Context, deviceID string) error
 	GetDevice(ctx context.Context, did string) (*Device, error)
+	GetDevicesByOwner(ctx context.Context, uid string) ([]Device, error)
 	UpdateDeviceOwner(ctx context.Context, did, uid string) error
 	UpdateDeviceConnectionStatus(ctx context.Context, did string, connectionStatus DeviceConnectionStatus) error
 	UpdateDeviceFirmwareVersion(ctx context.Context, did, firmwareVersion string) error

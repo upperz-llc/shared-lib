@@ -233,6 +233,32 @@ func (cdb *CockroachDB) GetDevice(ctx context.Context, did string) (*Device, err
 	return &device, err
 }
 
+func (cdb *CockroachDB) GetDevicesByOwner(ctx context.Context, uid string) ([]Device, error) {
+	query := `SELECT id, connection_status, device_type, firmware_version, monitoring_status, nickname, temperature, owner, last_seen FROM defaultdb.public.device WHERE owner = @uid`
+	args := pgx.NamedArgs{
+		"uid": uid,
+	}
+
+	rows, err := cdb.pool.Query(ctx, query, args)
+	if err != nil {
+		return nil, err
+	}
+
+	cockroachdevices, err := pgx.CollectRows[CockroachDevice](rows, pgx.RowToStructByPos[CockroachDevice])
+
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil
+	}
+
+	devices := make([]Device, 0)
+	for _, v := range cockroachdevices {
+		devices = append(devices, v.ToDevice())
+
+	}
+
+	return devices, err
+}
+
 func (cdb *CockroachDB) UpdateDeviceOwner(ctx context.Context, did, uid string) error {
 	query := `UPDATE defaultdb.public.device SET owner = @owner WHERE id = @id`
 	args := pgx.NamedArgs{
