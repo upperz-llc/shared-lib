@@ -399,8 +399,6 @@ func (cdb *CockroachDB) CreateDeviceTelemetry(ctx context.Context, did string, d
 		return err
 	}
 
-	fmt.Println(time.Unix(data.Timestamp, 0))
-
 	query := `INSERT INTO defaultdb.public.temperature (device_id, temperature, timestamp) VALUES (@device_id, @temperature, @timestamp)`
 	args := pgx.NamedArgs{
 		"device_id":   did,
@@ -415,8 +413,6 @@ func (cdb *CockroachDB) CreateDeviceTelemetry(ctx context.Context, did string, d
 		}
 		return err
 	}
-
-	fmt.Println(time.Unix(data.Timestamp, 0))
 
 	query = `UPDATE defaultdb.public.device SET last_seen = @timestamp, temperature = @temperature WHERE id = @id`
 	args = pgx.NamedArgs{
