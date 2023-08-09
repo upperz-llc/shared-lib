@@ -242,6 +242,115 @@ func (cdb *CockroachDB) UpdateDeviceOwner(ctx context.Context, did, uid string) 
 
 // ************************************
 
+func (cdb *CockroachDB) UpdateDeviceFirmwareVersion(ctx context.Context, did, firmwareVersion string) error {
+	conn, err := cdb.pool.Acquire(ctx)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	defer conn.Release()
+
+	tx, err := conn.BeginTx(ctx, pgx.TxOptions{})
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	query := `UPDATE defaultdb.public.device SET last_seen = @timestamp, firmware_version = @firmware_version WHERE id = @id`
+	args := pgx.NamedArgs{
+		"id":               did,
+		"firmware_version": firmwareVersion,
+		"timestamp":        time.Now(),
+	}
+
+	_, err = tx.Exec(ctx, query, args)
+	if err != nil {
+		if err := tx.Rollback(ctx); err != nil {
+			return err
+		}
+		return err
+	}
+
+	return tx.Commit(ctx)
+}
+
+func (cdb *CockroachDB) UpdateDeviceMonitoringStatus(ctx context.Context, did string, status DeviceMonitoringStatus) error {
+	conn, err := cdb.pool.Acquire(ctx)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	defer conn.Release()
+
+	tx, err := conn.BeginTx(ctx, pgx.TxOptions{})
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	query := `UPDATE defaultdb.public.device SET last_seen = @timestamp, monitoring_status = @monitoring_status WHERE id = @id`
+	args := pgx.NamedArgs{
+		"id":                did,
+		"timestamp":         time.Now(),
+		"monitoring_status": status,
+	}
+
+	_, err = tx.Exec(ctx, query, args)
+	if err != nil {
+		if err := tx.Rollback(ctx); err != nil {
+			return err
+		}
+		return err
+	}
+
+	return tx.Commit(ctx)
+}
+
+func (cdb *CockroachDB) UpdateDeviceOTAStatus(ctx context.Context, did string, status OTAStatus, timestamp int64) error {
+	conn, err := cdb.pool.Acquire(ctx)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	defer conn.Release()
+
+	tx, err := conn.BeginTx(ctx, pgx.TxOptions{})
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	query := `INSERT INTO defaultdb.public.ota_status (id, device_id, created_at, status) VALUES (DEFAULT, @device_id, DEFAULT, @status)`
+	args := pgx.NamedArgs{
+		"device_id": did,
+		"status":    status,
+	}
+
+	_, err = tx.Exec(ctx, query, args)
+	if err != nil {
+		if err := tx.Rollback(ctx); err != nil {
+			return err
+		}
+		return err
+	}
+
+	query = `UPDATE defaultdb.public.device SET last_seen = @timestamp WHERE id = @id`
+	args = pgx.NamedArgs{
+		"id":        did,
+		"timestamp": time.Now(),
+	}
+
+	_, err = tx.Exec(ctx, query, args)
+	if err != nil {
+		if err := tx.Rollback(ctx); err != nil {
+			return err
+		}
+		return err
+	}
+
+	return tx.Commit(ctx)
+}
+
 func (cdb *CockroachDB) CreateDeviceTelemetry(ctx context.Context, did string, data DeviceTelemetry) error {
 	conn, err := cdb.pool.Acquire(ctx)
 	if err != nil {

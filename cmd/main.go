@@ -25,11 +25,7 @@ func main() {
 	// 		break
 	// 	}
 	// now := time.Now()
-	err = db.CreateDeviceTelemetry(context.TODO(), "a2d548e1-86c0-4270-b121-21a24fdcaf07", sharedlib.DeviceTelemetry{
-		CreatedAt:   time.Now(),
-		Timestamp:   time.Now().Unix(),
-		Temperature: float64(100),
-	})
+	err = db.UpdateDeviceMonitoringStatus(context.TODO(), "a2d548e1-86c0-4270-b121-21a24fdcaf07", sharedlib.Alerted)
 	if err != nil {
 		fmt.Println(err)
 		return

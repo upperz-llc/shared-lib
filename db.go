@@ -62,8 +62,9 @@ type SQLDB interface {
 	GetDevice(ctx context.Context, did string) (*Device, error)
 	UpdateDeviceOwner(ctx context.Context, did, uid string) error
 	// UpdateDeviceConnectionStatus(ctx context.Context, deviceID string, connectionStatus DeviceConnectionStatus) error
-	// UpdateDeviceFirmwareVersion(ctx context.Context, deviceID, firmwareVersion string) error
-	// UpdateDeviceOTAStatus(ctx context.Context, deviceID string, status OTAStatus, timestamp int64) error
+	UpdateDeviceFirmwareVersion(ctx context.Context, did, firmwareVersion string) error
+	UpdateDeviceMonitoringStatus(ctx context.Context, deviceID string, status DeviceMonitoringStatus) error
+	UpdateDeviceOTAStatus(ctx context.Context, deviceID string, status OTAStatus, timestamp int64) error
 
 	// User interface
 	CreateUser(ctx context.Context, user User) error
