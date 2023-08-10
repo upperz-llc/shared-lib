@@ -75,6 +75,7 @@ type SQLDB interface {
 
 	// Device Telemetry
 	CreateDeviceTelemetry(ctx context.Context, did string, data DeviceTelemetry) error
+	GetDeviceTelemetry(ctx context.Context, did string, r TelemetryRange) ([]DeviceTelemetry, error)
 
 	// Manufacturing
 	CreateDeviceAndManufacturingData(ctx context.Context, md ManufacturingData) error

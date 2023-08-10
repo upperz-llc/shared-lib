@@ -99,13 +99,34 @@ type DeviceConfig struct {
 }
 
 type DeviceTelemetry struct {
-	CreatedAt   time.Time `json:"created_at"`
-	DeleteAt    time.Time `json:"deleted_at"`
-	Timestamp   int64     `json:"timestamp"`
-	Temperature float64   `json:"temperature"`
+	ID          string    `json:"id"`
+	DeviceID    string    `json:"device_id"`
+	Temperature int64     `json:"temperature"`
+	Timestamp   time.Time `json:"timestamp"`
 }
 
 type OTATelemetry struct {
 	Timestamp time.Time `json:"timestamp"`
 	Status    OTAStatus `json:"status"`
+}
+
+type TelemetryRange int
+
+const (
+	Hour TelemetryRange = iota
+	SixHour
+	Day
+)
+
+func (tr TelemetryRange) ToTime() time.Time {
+	switch tr {
+	case Hour:
+		return time.Now().Add(-1 * time.Hour)
+	case SixHour:
+		return time.Now().Add(-6 * time.Hour)
+	case Day:
+		return time.Now().Add(-24 * time.Hour)
+
+	}
+	return time.Now()
 }

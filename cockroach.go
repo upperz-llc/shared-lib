@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"math"
 	"os"
 	"time"
 
@@ -428,8 +427,8 @@ func (cdb *CockroachDB) CreateDeviceTelemetry(ctx context.Context, did string, d
 	query := `INSERT INTO defaultdb.public.temperature (device_id, temperature, timestamp) VALUES (@device_id, @temperature, @timestamp)`
 	args := pgx.NamedArgs{
 		"device_id":   did,
-		"temperature": math.Round(data.Temperature*100) / 100,
-		"timestamp":   time.Unix(data.Timestamp, 0),
+		"temperature": data.Temperature,
+		"timestamp":   data.Timestamp,
 	}
 
 	_, err = tx.Exec(ctx, query, args)
@@ -443,8 +442,8 @@ func (cdb *CockroachDB) CreateDeviceTelemetry(ctx context.Context, did string, d
 	query = `UPDATE defaultdb.public.device SET last_seen = @timestamp, temperature = @temperature WHERE id = @id`
 	args = pgx.NamedArgs{
 		"id":          did,
-		"temperature": math.Round(data.Temperature*100) / 100,
-		"timestamp":   time.Unix(data.Timestamp, 0),
+		"temperature": data.Temperature,
+		"timestamp":   data.Timestamp,
 	}
 
 	_, err = tx.Exec(ctx, query, args)
@@ -678,6 +677,61 @@ func (cdb *CockroachDB) GetUser(ctx context.Context, uid string) (*User, error) 
 
 	user := cockroachuser.ToUser()
 	return &user, err
+}
+
+type CockroachTelemetry struct {
+	ID          pgtype.UUID        `json:"id"`
+	DeviceID    pgtype.UUID        `json:"device_id"`
+	Temperature pgtype.Int8        `json:"temperature"`
+	Timestamp   pgtype.Timestamptz `json:"timestamp"`
+}
+
+func (c CockroachTelemetry) ToDeviceTelemetry() DeviceTelemetry {
+	d := DeviceTelemetry{}
+	if c.ID.Valid {
+		v, _ := c.ID.Value()
+		d.ID = v.(string)
+	}
+	if c.DeviceID.Valid {
+		v, _ := c.DeviceID.Value()
+		d.DeviceID = v.(string)
+	}
+	if c.Temperature.Valid {
+		v, _ := c.Temperature.Value()
+		d.Temperature = v.(int64)
+	}
+	if c.Timestamp.Valid {
+		v, _ := c.Timestamp.Value()
+		d.Timestamp = v.(time.Time)
+	}
+
+	return d
+}
+
+func (cdb *CockroachDB) GetDeviceTelemetry(ctx context.Context, did string, r TelemetryRange) ([]DeviceTelemetry, error) {
+	query := `SELECT id, device_id, temperature, timestamp FROM defaultdb.public.temperature WHERE device_id = @device_id AND timestamp >= @range`
+	args := pgx.NamedArgs{
+		"device_id": did,
+		"range":     r.ToTime(),
+	}
+
+	rows, err := cdb.pool.Query(ctx, query, args)
+	if err != nil {
+		return nil, err
+	}
+
+	cockroachtelemetry, err := pgx.CollectRows[CockroachTelemetry](rows, pgx.RowToStructByPos[CockroachTelemetry])
+
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil
+	}
+
+	telemetry := make([]DeviceTelemetry, 0)
+	for _, v := range cockroachtelemetry {
+		telemetry = append(telemetry, v.ToDeviceTelemetry())
+	}
+
+	return telemetry, err
 }
 
 func NewCockroachDB(ctx context.Context) (*CockroachDB, error) {
