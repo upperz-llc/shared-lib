@@ -290,7 +290,7 @@ func (cdb *CockroachDB) UpdateDeviceFirmwareVersion(ctx context.Context, did, fi
 	args := pgx.NamedArgs{
 		"id":               did,
 		"firmware_version": firmwareVersion,
-		"timestamp":        time.Now(),
+		"timestamp":        time.Now().Format(time.RFC3339),
 	}
 
 	_, err = tx.Exec(ctx, query, args)
@@ -319,7 +319,7 @@ func (cdb *CockroachDB) UpdateDeviceConnectionStatus(ctx context.Context, did st
 	query := `UPDATE defaultdb.public.device SET last_seen = @timestamp, connection_status = @connection_status WHERE id = @id`
 	args := pgx.NamedArgs{
 		"id":                did,
-		"timestamp":         time.Now(),
+		"timestamp":         time.Now().Format(time.RFC3339),
 		"connection_status": status,
 	}
 
@@ -351,7 +351,7 @@ func (cdb *CockroachDB) UpdateDeviceMonitoringStatus(ctx context.Context, did st
 	query := `UPDATE defaultdb.public.device SET last_seen = @timestamp, monitoring_status = @monitoring_status WHERE id = @id`
 	args := pgx.NamedArgs{
 		"id":                did,
-		"timestamp":         time.Now(),
+		"timestamp":         time.Now().Format(time.RFC3339),
 		"monitoring_status": status,
 	}
 
@@ -463,7 +463,7 @@ func (cdb *CockroachDB) CreateUser(ctx context.Context, user User) error {
 	args := pgx.NamedArgs{
 		"uid":        user.UID,
 		"email":      user.Email,
-		"created_at": time.Unix(time.Now().Unix(), 0),
+		"created_at": time.Unix(time.Now().Unix(), 0).Format(time.RFC3339),
 	}
 
 	_, err := cdb.pool.Exec(ctx, query, args)
@@ -495,7 +495,7 @@ func (cdb *CockroachDB) CreateManufacturingData(ctx context.Context, md Manufact
 	args := pgx.NamedArgs{
 		"device_id":        md.DeviceID,
 		"device_type":      md.DeviceType,
-		"manufactured_at":  time.Unix(time.Now().Unix(), 0),
+		"manufactured_at":  time.Unix(time.Now().Unix(), 0).Format(time.RFC3339),
 		"measurement_type": md.MeasurementType,
 		"username":         md.Username,
 		"password":         md.Password,
