@@ -610,6 +610,76 @@ func (cdb *CockroachDB) AddAuthAndACLs(ctx context.Context, did, username, passw
 	return tx.Commit(ctx)
 }
 
+type CockroachUser struct {
+	ID               pgtype.UUID        `json:"id"`
+	UID              pgtype.Text        `json:"uid"`
+	Email            pgtype.Text        `json:"email"`
+	NotificationPush pgtype.Bool        `json:"notification_push"`
+	NotificationSMS  pgtype.Bool        `json:"notification_sms"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
+	PhoneNumber      pgtype.Text        `json:"phone_number"`
+}
+
+func (c CockroachUser) ToUser() User {
+	d := User{}
+	if c.ID.Valid {
+		v, _ := c.ID.Value()
+		d.ID = v.(string)
+	}
+	if c.UID.Valid {
+		v, _ := c.UID.Value()
+		d.UID = v.(string)
+	}
+	if c.Email.Valid {
+		v, _ := c.Email.Value()
+		d.Email = v.(string)
+	}
+	if c.NotificationPush.Valid {
+		v, _ := c.NotificationPush.Value()
+		d.NotificationPush = v.(bool)
+	}
+	if c.NotificationSMS.Valid {
+		v, _ := c.NotificationSMS.Value()
+		d.NotificationSMS = v.(bool)
+	}
+	if c.CreatedAt.Valid {
+		v, _ := c.CreatedAt.Value()
+		d.CreatedAt = v.(time.Time)
+	}
+	if c.UpdatedAt.Valid {
+		v, _ := c.UpdatedAt.Value()
+		d.UpdatedAt = v.(time.Time)
+	}
+	if c.PhoneNumber.Valid {
+		v, _ := c.PhoneNumber.Value()
+		d.PhoneNumber = v.(string)
+	}
+
+	return d
+}
+
+func (cdb *CockroachDB) GetUser(ctx context.Context, uid string) (*User, error) {
+	query := `SELECT id, uid, email, notification_push, notification_sms, created_at, updated_at, phone_number FROM defaultdb.public.user WHERE uid = @uid`
+	args := pgx.NamedArgs{
+		"uid": uid,
+	}
+
+	rows, err := cdb.pool.Query(ctx, query, args)
+	if err != nil {
+		return nil, err
+	}
+
+	cockroachuser, err := pgx.CollectOneRow[CockroachUser](rows, pgx.RowToStructByPos[CockroachUser])
+
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil
+	}
+
+	user := cockroachuser.ToUser()
+	return &user, err
+}
+
 func NewCockroachDB(ctx context.Context) (*CockroachDB, error) {
 	dbu := os.Getenv("DB_USERNAME")
 	dbp := os.Getenv("DB_PASS")

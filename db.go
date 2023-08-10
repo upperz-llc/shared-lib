@@ -70,7 +70,7 @@ type SQLDB interface {
 	// User interface
 	CreateUser(ctx context.Context, user User) error
 	DeleteUserByUID(ctx context.Context, key string) error
-	// GetUser(ctx context.Context, uid string) (*User, error)
+	GetUser(ctx context.Context, uid string) (*User, error)
 	// GetUserNotificationSettings(ctx context.Context, uid string) (*User, error)
 
 	// Device Telemetry
