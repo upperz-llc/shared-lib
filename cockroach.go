@@ -181,7 +181,7 @@ func (cdb *CockroachDB) CreateDeviceConfig(ctx context.Context, did string, conf
 		return err
 	}
 
-	query = `INSERT INTO defaultdb.public.device_config (id, device_id, alert, warning, target, measurement_interval, created_at, updated_at) VALUES (DEFAULT, @device_id, @alert, @warning, @target, @mesurement_interval, DEFAULT, NOW())`
+	query = `INSERT INTO defaultdb.public.device_config (id, device_id, alert, warning, target, measurement_interval, created_at, updated_at) VALUES (DEFAULT, @device_id, @alert, @warning, @target, @measurement_interval, DEFAULT, NOW())`
 	args = pgx.NamedArgs{
 		"device_id":            did,
 		"alert":                config.AlertTemperature,
