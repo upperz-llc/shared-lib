@@ -59,6 +59,7 @@ type SQLDB interface {
 	// AddDeviceTelemetry(ctx context.Context, deviceID string, data *DeviceTelemetry) error
 	// CreateDevice(ctx context.Context, device *Device) error
 	// // DeleteDevice(ctx context.Context, deviceID string) error
+	CreateDeviceConfig(ctx context.Context, did string, config DeviceConfig) error
 	GetDevice(ctx context.Context, did string) (*Device, error)
 	GetDevicesByOwner(ctx context.Context, uid string) ([]Device, error)
 	GetDeviceConfig(ctx context.Context, did string) (*DeviceConfig, error)

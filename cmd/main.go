@@ -43,6 +43,17 @@ func main() {
 	// fmt.Println(time.Since(now))
 	// fmt.Println(len(t))
 
+	err = db.CreateDeviceConfig(context.TODO(), "18b8f73c-b9fd-4b0f-b97e-0c6914efa3e0", sharedlib.DeviceConfig{
+		AlertTemperature:   35,
+		TargetTemperature:  25,
+		WarningTemperature: 30,
+		TelemetryPeriod:    60,
+	})
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
 	now := time.Now()
 	t, err := db.GetDeviceConfig(context.TODO(), "18b8f73c-b9fd-4b0f-b97e-0c6914efa3e0")
 	if err != nil {

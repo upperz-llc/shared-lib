@@ -156,6 +156,48 @@ func (cdb *CockroachDB) GetAuth(ctx context.Context, did string) (*Auth, error) 
 
 // **************************************
 
+func (cdb *CockroachDB) CreateDeviceConfig(ctx context.Context, did string, config DeviceConfig) error {
+	conn, err := cdb.pool.Acquire(ctx)
+	if err != nil {
+		return err
+	}
+	defer conn.Release()
+
+	tx, err := conn.BeginTx(ctx, pgx.TxOptions{})
+	if err != nil {
+		return err
+	}
+
+	query := `DELETE FROM defaultdb.public.device_config WHERE device_id = @device_id`
+	args := pgx.NamedArgs{
+		"device_id": did,
+	}
+
+	_, err = tx.Exec(ctx, query, args)
+	if err != nil {
+		if err := tx.Rollback(ctx); err != nil {
+			return err
+		}
+		return err
+	}
+
+	query = `INSERT INTO defaultdb.public.device_config (id, device_id, alert, warning, target, measurement_interval, created_at, updated_at) VALUES (DEFAULT, @device_id, @alert, @warning, @target, @mesurement_interval, DEFAULT, NOW())`
+	args = pgx.NamedArgs{
+		"device_id":            did,
+		"alert":                config.AlertTemperature,
+		"warning":              config.WarningTemperature,
+		"target":               config.TargetTemperature,
+		"measurement_interval": config.TelemetryPeriod,
+	}
+
+	_, err = cdb.pool.Exec(ctx, query, args)
+	if err != nil {
+		log.Println(err)
+	}
+
+	return tx.Commit(ctx)
+}
+
 // ************* DEVICE *****************
 type CockroachDevice struct {
 	ID               pgtype.UUID        `json:"id"`
