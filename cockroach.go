@@ -232,6 +232,60 @@ func (cdb *CockroachDB) GetDevice(ctx context.Context, did string) (*Device, err
 	return &device, err
 }
 
+type CockroachDeviceConfig struct {
+	ID                  pgtype.UUID
+	DeviceID            pgtype.UUID
+	Alert               pgtype.Int8
+	Warning             pgtype.Int8
+	Target              pgtype.Int8
+	MeasurementInterval pgtype.Int8
+	CreatedAt           pgtype.Timestamptz
+	Updated_at          pgtype.Timestamptz
+}
+
+func (c CockroachDeviceConfig) ToDeviceConfig() DeviceConfig {
+	d := DeviceConfig{}
+	if c.Alert.Valid {
+		v, _ := c.Alert.Value()
+		d.AlertTemperature = int(v.(int64))
+	}
+	if c.Warning.Valid {
+		v, _ := c.Warning.Value()
+		d.WarningTemperature = int(v.(int64))
+	}
+	if c.Target.Valid {
+		v, _ := c.Target.Value()
+		d.TargetTemperature = int(v.(int64))
+	}
+	if c.MeasurementInterval.Valid {
+		v, _ := c.MeasurementInterval.Value()
+		d.TelemetryPeriod = int(v.(int64))
+	}
+
+	return d
+}
+
+func (cdb *CockroachDB) GetDeviceConfig(ctx context.Context, did string) (*DeviceConfig, error) {
+	query := `SELECT id, device_id, alert, warning, target, measurement_interval, created_at, updated_at FROM defaultdb.public.device_config WHERE device_id = @device_id`
+	args := pgx.NamedArgs{
+		"device_id": did,
+	}
+
+	rows, err := cdb.pool.Query(ctx, query, args)
+	if err != nil {
+		return nil, err
+	}
+
+	cockroachdeviceconfig, err := pgx.CollectOneRow[CockroachDeviceConfig](rows, pgx.RowToStructByPos[CockroachDeviceConfig])
+
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil
+	}
+
+	deviceconfig := cockroachdeviceconfig.ToDeviceConfig()
+	return &deviceconfig, err
+}
+
 func (cdb *CockroachDB) GetDevicesByOwner(ctx context.Context, uid string) ([]Device, error) {
 	query := `SELECT id, connection_status, device_type, firmware_version, monitoring_status, nickname, temperature, owner, last_seen FROM defaultdb.public.device WHERE owner = @uid`
 	args := pgx.NamedArgs{
@@ -732,6 +786,28 @@ func (cdb *CockroachDB) GetDeviceTelemetry(ctx context.Context, did string, r Te
 	}
 
 	return telemetry, err
+}
+
+func (cdb *CockroachDB) QueryAlarm(ctx context.Context, uid string, at AlarmType) (*Alarm, error) {
+	// query := `SELECT id, uid, email, notification_push, notification_sms, created_at, updated_at, phone_number FROM defaultdb.public.user WHERE uid = @uid`
+	// args := pgx.NamedArgs{
+	// 	"uid": uid,
+	// }
+
+	// rows, err := cdb.pool.Query(ctx, query, args)
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	// cockroachuser, err := pgx.CollectOneRow[CockroachUser](rows, pgx.RowToStructByPos[CockroachUser])
+
+	// if errors.Is(err, pgx.ErrNoRows) {
+	// 	return nil, nil
+	// }
+
+	// user := cockroachuser.ToUser()
+	// return &user, err
+	return nil, nil
 }
 
 func NewCockroachDB(ctx context.Context) (*CockroachDB, error) {

@@ -16,33 +16,46 @@ func main() {
 		fmt.Println(err)
 	}
 
-	fmt.Println(time.Now().Format(time.RFC3339))
-	// i := 1
-
-	// for {
-
-	// 	if i == 10 {
-	// 		break
-	// 	}
 	// now := time.Now()
-	devices, err := db.GetDevicesByOwner(context.TODO(), "U1uhP6ekkuMYa4VDiTrrGZOtQ3G3")
+	// t, err := db.GetDeviceTelemetry(context.TODO(), "18b8f73c-b9fd-4b0f-b97e-0c6914efa3e0", sharedlib.Hour)
+	// if err != nil {
+	// 	fmt.Println(err)
+	// 	return
+	// }
+	// fmt.Println(time.Since(now))
+	// fmt.Println(len(t))
+
+	// now = time.Now()
+	// t, err = db.GetDeviceTelemetry(context.TODO(), "18b8f73c-b9fd-4b0f-b97e-0c6914efa3e0", sharedlib.SixHour)
+	// if err != nil {
+	// 	fmt.Println(err)
+	// 	return
+	// }
+	// fmt.Println(time.Since(now))
+	// fmt.Println(len(t))
+
+	// now = time.Now()
+	// t, err = db.GetDeviceTelemetry(context.TODO(), "18b8f73c-b9fd-4b0f-b97e-0c6914efa3e0", sharedlib.Day)
+	// if err != nil {
+	// 	fmt.Println(err)
+	// 	return
+	// }
+	// fmt.Println(time.Since(now))
+	// fmt.Println(len(t))
+
+	now := time.Now()
+	t, err := db.GetDeviceConfig(context.TODO(), "18b8f73c-b9fd-4b0f-b97e-0c6914efa3e0")
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-
-	now := time.Now()
-	devices, err = db.GetDevicesByOwner(context.TODO(), "U1uhP6ekkuMYa4VDiTrrGZOtQ3G3")
-	if err != nil {
-		fmt.Println(err)
+	if t == nil {
+		fmt.Println("Not found!")
 		return
 	}
 	fmt.Println(time.Since(now))
+	fmt.Println(t)
 
-	for _, v := range devices {
-		fmt.Println(v)
-
-	}
 	// device, err := db.GetACL(context.TODO(), "9e307763-2683-494d-8234-3e01896d8874", "CONFIG/9e307763-2683-494d-8234-3e01896d8874s")
 	// if err != nil {
 	// 	fmt.Println(err)

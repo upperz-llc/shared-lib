@@ -49,11 +49,11 @@ type SQLDB interface {
 	// GetDeviceOwner(ctx context.Context, deviceID string) (string, error)
 
 	// GetAuthByDeviceID(ctx context.Context, did string)
-	// // Alarm interface
-	// CreateAlarm(ctx context.Context, alarm *Alarm) error
+	// Alarm interface
+	// GetAlarm(ctx context.Context, alarm *Alarm) (*Alarm, error)
 	// DeleteAlarm(ctx context.Context, alarmID string) error
 	// GetAlarm(ctx context.Context, alarmID string) (*Alarm, error)
-	// QueryAlarm(ctx context.Context, clientID string, alarmType AlarmType) (*Alarm, error)
+	QueryAlarm(ctx context.Context, did string, alarmType AlarmType) (*Alarm, error)
 
 	// // Device interface
 	// AddDeviceTelemetry(ctx context.Context, deviceID string, data *DeviceTelemetry) error
@@ -61,6 +61,7 @@ type SQLDB interface {
 	// // DeleteDevice(ctx context.Context, deviceID string) error
 	GetDevice(ctx context.Context, did string) (*Device, error)
 	GetDevicesByOwner(ctx context.Context, uid string) ([]Device, error)
+	GetDeviceConfig(ctx context.Context, did string) (*DeviceConfig, error)
 	UpdateDeviceOwner(ctx context.Context, did, uid string) error
 	UpdateDeviceConnectionStatus(ctx context.Context, did string, connectionStatus DeviceConnectionStatus) error
 	UpdateDeviceFirmwareVersion(ctx context.Context, did, firmwareVersion string) error
