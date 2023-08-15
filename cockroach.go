@@ -112,7 +112,7 @@ func (c CockroachAlarm) ToAlarm() alarm.Alarm {
 }
 
 func (cdb *CockroachDB) QueryAlarm(ctx context.Context, did string, at alarm.AlarmType) (*alarm.Alarm, error) {
-	query := `SELECT id, type, device_id, acked_by, acked, active, acked_check_count, closed_at, acked_at, created_at FROM defaultdb.public.alarm WHERE device_id = @device_id and type = @type`
+	query := `SELECT id, type, device_id, acked_by, acked, active, acked_check_count, closed_at, acked_at, created_at FROM defaultdb.public.alarm WHERE device_id = @device_id and type = @type ORDER BY created_at DESC`
 	args := pgx.NamedArgs{
 		"device_id": did,
 		"type":      int(at),
