@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	sharedlib "github.com/upperz-llc/shared-lib"
-	sharedlibalarm "github.com/upperz-llc/shared-lib/alarm"
 )
 
 func main() {
@@ -16,17 +15,10 @@ func main() {
 		fmt.Println(err)
 	}
 
-	a, err := db.QueryAlarm(context.TODO(), "18b8f73c-b9fd-4b0f-b97e-0c6914efa3e0", sharedlibalarm.Connection)
+	err = db.CloseAlarm(context.TODO(), "d5685832-e833-4ed9-957f-2c2bb2c3afc0")
 	if err != nil {
 		fmt.Println(err)
 	}
-
-	if a == nil {
-		fmt.Println("NOT FOUND")
-		return
-	}
-
-	fmt.Println(*a)
 
 	// now := time.Now()
 	// t, err := db.GetDeviceTelemetry(context.TODO(), "18b8f73c-b9fd-4b0f-b97e-0c6914efa3e0", sharedlib.Hour)

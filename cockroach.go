@@ -17,6 +17,19 @@ type CockroachDB struct {
 	pool *pgxpool.Pool
 }
 
+func (cdb *CockroachDB) CloseAlarm(ctx context.Context, aid string) error {
+	query := `UPDATE defaultdb.public.alarm SET active = @active, closed_at = @closed_at WHERE id = @id`
+	args := pgx.NamedArgs{
+		"id":        aid,
+		"active":    false,
+		"closed_at": time.Now().Format(time.RFC3339),
+	}
+
+	_, err := cdb.pool.Exec(ctx, query, args)
+	return err
+
+}
+
 func (cdb *CockroachDB) CreateAlarm(ctx context.Context, did string, at alarm.AlarmType) (*alarm.Alarm, error) {
 	query := `INSERT INTO defaultdb.public.alarm (id, type, device_id) VALUES (DEFAULT, @type, @device_id) RETURNING *`
 	args := pgx.NamedArgs{
