@@ -57,7 +57,7 @@ type SQLDB interface {
 	// GetAlarm(ctx context.Context, alarm *Alarm) (*Alarm, error)
 	// DeleteAlarm(ctx context.Context, alarmID string) error
 	// GetAlarm(ctx context.Context, alarmID string) (*Alarm, error)
-	CreateAlarm(ctx context.Context, did string, at alarm.AlarmType) error
+	CreateAlarm(ctx context.Context, did string, at alarm.AlarmType) (*alarm.Alarm, error)
 	QueryAlarm(ctx context.Context, did string, at alarm.AlarmType) (*alarm.Alarm, error)
 
 	// // Device interface
