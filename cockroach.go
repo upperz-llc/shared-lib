@@ -4,19 +4,31 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"os"
 	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"golang.org/x/exp/slog"
+	"github.com/upperz-llc/shared-lib/alarm"
 )
 
 type CockroachDB struct {
-	pool   *pgxpool.Pool
-	logger slog.Logger
+	pool *pgxpool.Pool
+}
+
+func (cdb *CockroachDB) CreateAlarm(ctx context.Context, did string, at alarm.AlarmType) error {
+	query := `INSERT INTO defaultdb.public.alarm
+	(id, type, device_id, created_at)
+	VALUES (DEFAULT, @type, @device_id, DEFAULT)`
+	args := pgx.NamedArgs{
+		"@device_id": did,
+		"@type":      at,
+	}
+
+	_, err := cdb.pool.Exec(ctx, query, args)
+
+	return err
 }
 
 // ************ AUTH *******************
@@ -192,7 +204,10 @@ func (cdb *CockroachDB) CreateDeviceConfig(ctx context.Context, did string, conf
 
 	_, err = cdb.pool.Exec(ctx, query, args)
 	if err != nil {
-		log.Println(err)
+		if err := tx.Rollback(ctx); err != nil {
+			return err
+		}
+		return err
 	}
 
 	return tx.Commit(ctx)
@@ -562,9 +577,6 @@ func (cdb *CockroachDB) CreateUser(ctx context.Context, user User) error {
 	}
 
 	_, err := cdb.pool.Exec(ctx, query, args)
-	if err != nil {
-		log.Println(err)
-	}
 
 	return err
 }
@@ -576,9 +588,6 @@ func (cdb *CockroachDB) DeleteUserByUID(ctx context.Context, uid string) error {
 	}
 
 	_, err := cdb.pool.Exec(ctx, query, args)
-	if err != nil {
-		log.Println(err)
-	}
 
 	return err
 }
@@ -597,9 +606,6 @@ func (cdb *CockroachDB) CreateManufacturingData(ctx context.Context, md Manufact
 	}
 
 	_, err := cdb.pool.Exec(ctx, query, args)
-	if err != nil {
-		log.Println(err)
-	}
 
 	return err
 }
@@ -830,7 +836,7 @@ func (cdb *CockroachDB) GetDeviceTelemetry(ctx context.Context, did string, r Te
 	return telemetry, err
 }
 
-func (cdb *CockroachDB) QueryAlarm(ctx context.Context, uid string, at AlarmType) (*Alarm, error) {
+func (cdb *CockroachDB) QueryAlarm(ctx context.Context, uid string, at alarm.AlarmType) (*alarm.Alarm, error) {
 	// query := `SELECT id, uid, email, notification_push, notification_sms, created_at, updated_at, phone_number FROM defaultdb.public.user WHERE uid = @uid`
 	// args := pgx.NamedArgs{
 	// 	"uid": uid,
@@ -867,7 +873,6 @@ func NewCockroachDB(ctx context.Context) (*CockroachDB, error) {
 
 	pool, err := pgxpool.NewWithConfig(ctx, config)
 	if err != nil {
-		log.Fatal("failed to create connection pool", err)
 		return nil, err
 	}
 

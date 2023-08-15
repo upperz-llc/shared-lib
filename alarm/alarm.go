@@ -1,4 +1,4 @@
-package sharedlib
+package alarm
 
 import "time"
 
@@ -11,8 +11,8 @@ const (
 
 type Alarm struct {
 	ID              string    `json:"id"`
-	Type            int       `json:"type"`
-	ClientID        string    `json:"client_id"`
+	Type            AlarmType `json:"type"`
+	DeviceID        string    `json:"device_id"`
 	CreatedAt       time.Time `json:"created_at"`
 	ClosedAt        time.Time `json:"closed_at"`
 	AckedAt         time.Time `json:"acked_at"`

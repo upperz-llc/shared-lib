@@ -1,6 +1,10 @@
 package sharedlib
 
-import "context"
+import (
+	"context"
+
+	"github.com/upperz-llc/shared-lib/alarm"
+)
 
 // type DB interface {
 // 	// Alarm interface
@@ -53,7 +57,8 @@ type SQLDB interface {
 	// GetAlarm(ctx context.Context, alarm *Alarm) (*Alarm, error)
 	// DeleteAlarm(ctx context.Context, alarmID string) error
 	// GetAlarm(ctx context.Context, alarmID string) (*Alarm, error)
-	QueryAlarm(ctx context.Context, did string, alarmType AlarmType) (*Alarm, error)
+	CreateAlarm(ctx context.Context, did string, at alarm.AlarmType) error
+	QueryAlarm(ctx context.Context, did string, at alarm.AlarmType) (*alarm.Alarm, error)
 
 	// // Device interface
 	// AddDeviceTelemetry(ctx context.Context, deviceID string, data *DeviceTelemetry) error
