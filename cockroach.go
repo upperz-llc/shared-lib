@@ -17,16 +17,26 @@ type CockroachDB struct {
 	pool *pgxpool.Pool
 }
 
-func (cdb *CockroachDB) CreateAlarm(ctx context.Context, did string, at alarm.AlarmType) error {
-	query := `INSERT INTO defaultdb.public.alarm (id, type, device_id) VALUES (DEFAULT, @type, @device_id)`
+func (cdb *CockroachDB) CreateAlarm(ctx context.Context, did string, at alarm.AlarmType) (*alarm.Alarm, error) {
+	query := `INSERT INTO defaultdb.public.alarm (id, type, device_id) VALUES (DEFAULT, @type, @device_id) RETURNING *`
 	args := pgx.NamedArgs{
 		"device_id": did,
 		"type":      int(at),
 	}
 
-	_, err := cdb.pool.Exec(ctx, query, args)
+	rows, err := cdb.pool.Query(ctx, query, args)
+	if err != nil {
+		return nil, err
+	}
 
-	return err
+	cockroachalarm, err := pgx.CollectOneRow[CockroachAlarm](rows, pgx.RowToStructByPos[CockroachAlarm])
+
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil
+	}
+
+	alarm := cockroachalarm.ToAlarm()
+	return &alarm, err
 }
 
 type CockroachAlarm struct {
