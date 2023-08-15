@@ -16,10 +16,17 @@ func main() {
 		fmt.Println(err)
 	}
 
-	err = db.CreateAlarm(context.TODO(), "18b8f73c-b9fd-4b0f-b97e-0c6914efa3e0", sharedlibalarm.Connection)
+	a, err := db.QueryAlarm(context.TODO(), "18b8f73c-b9fd-4b0f-b97e-0c6914efa3e0", sharedlibalarm.Connection)
 	if err != nil {
 		fmt.Println(err)
 	}
+
+	if a == nil {
+		fmt.Println("NOT FOUND")
+		return
+	}
+
+	fmt.Println(*a)
 
 	// now := time.Now()
 	// t, err := db.GetDeviceTelemetry(context.TODO(), "18b8f73c-b9fd-4b0f-b97e-0c6914efa3e0", sharedlib.Hour)

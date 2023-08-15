@@ -29,6 +29,87 @@ func (cdb *CockroachDB) CreateAlarm(ctx context.Context, did string, at alarm.Al
 	return err
 }
 
+type CockroachAlarm struct {
+	ID              pgtype.UUID        `json:"id"`
+	Type            pgtype.Int2        `json:"type"`
+	DeviceID        pgtype.UUID        `json:"device_id"`
+	AckedBy         pgtype.Text        `json:"acked_by"`
+	Acked           pgtype.Bool        `json:"acked"`
+	Active          pgtype.Bool        `json:"active"`
+	AckedCheckCount pgtype.Int2        `json:"acked_check_count"`
+	ClosedAt        pgtype.Timestamptz `json:"closed_at"`
+	AckedAt         pgtype.Timestamptz `json:"acked_at"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+}
+
+func (c CockroachAlarm) ToAlarm() alarm.Alarm {
+	d := alarm.Alarm{}
+	if c.ID.Valid {
+		v, _ := c.ID.Value()
+		d.ID = v.(string)
+	}
+	if c.Type.Valid {
+		v, _ := c.Type.Value()
+		d.Type = alarm.AlarmType(v.(int64))
+	}
+	if c.DeviceID.Valid {
+		v, _ := c.DeviceID.Value()
+		d.DeviceID = v.(string)
+	}
+	if c.AckedBy.Valid {
+		v, _ := c.AckedBy.Value()
+		d.AckedBy = v.(string)
+	}
+	if c.Acked.Valid {
+		v, _ := c.Acked.Value()
+		d.Acked = v.(bool)
+	}
+	if c.Active.Valid {
+		v, _ := c.Active.Value()
+		d.Active = v.(bool)
+	}
+	if c.AckedCheckCount.Valid {
+		v, _ := c.AckedCheckCount.Value()
+		d.AckedCheckCount = int(v.(int64))
+	}
+	if c.ClosedAt.Valid {
+		v, _ := c.ClosedAt.Value()
+		d.ClosedAt = v.(time.Time)
+	}
+	if c.AckedAt.Valid {
+		v, _ := c.AckedAt.Value()
+		d.AckedAt = v.(time.Time)
+	}
+	if c.CreatedAt.Valid {
+		v, _ := c.CreatedAt.Value()
+		d.CreatedAt = v.(time.Time)
+	}
+
+	return d
+}
+
+func (cdb *CockroachDB) QueryAlarm(ctx context.Context, did string, at alarm.AlarmType) (*alarm.Alarm, error) {
+	query := `SELECT id, type, device_id, acked_by, acked, active, acked_check_count, closed_at, acked_at, created_at FROM defaultdb.public.alarm WHERE device_id = @device_id and type = @type`
+	args := pgx.NamedArgs{
+		"device_id": did,
+		"type":      int(at),
+	}
+
+	rows, err := cdb.pool.Query(ctx, query, args)
+	if err != nil {
+		return nil, err
+	}
+
+	cockroachalarm, err := pgx.CollectOneRow[CockroachAlarm](rows, pgx.RowToStructByPos[CockroachAlarm])
+
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil
+	}
+
+	alarm := cockroachalarm.ToAlarm()
+	return &alarm, err
+}
+
 // ************ AUTH *******************
 
 type CockroachACL struct {
@@ -832,28 +913,6 @@ func (cdb *CockroachDB) GetDeviceTelemetry(ctx context.Context, did string, r Te
 	}
 
 	return telemetry, err
-}
-
-func (cdb *CockroachDB) QueryAlarm(ctx context.Context, uid string, at alarm.AlarmType) (*alarm.Alarm, error) {
-	// query := `SELECT id, uid, email, notification_push, notification_sms, created_at, updated_at, phone_number FROM defaultdb.public.user WHERE uid = @uid`
-	// args := pgx.NamedArgs{
-	// 	"uid": uid,
-	// }
-
-	// rows, err := cdb.pool.Query(ctx, query, args)
-	// if err != nil {
-	// 	return nil, err
-	// }
-
-	// cockroachuser, err := pgx.CollectOneRow[CockroachUser](rows, pgx.RowToStructByPos[CockroachUser])
-
-	// if errors.Is(err, pgx.ErrNoRows) {
-	// 	return nil, nil
-	// }
-
-	// user := cockroachuser.ToUser()
-	// return &user, err
-	return nil, nil
 }
 
 func NewCockroachDB(ctx context.Context) (*CockroachDB, error) {
