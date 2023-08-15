@@ -18,12 +18,10 @@ type CockroachDB struct {
 }
 
 func (cdb *CockroachDB) CreateAlarm(ctx context.Context, did string, at alarm.AlarmType) error {
-	query := `INSERT INTO defaultdb.public.alarm
-	(id, type, device_id, created_at)
-	VALUES (DEFAULT, @type, @device_id, DEFAULT)`
+	query := `INSERT INTO defaultdb.public.alarm (id, type, device_id) VALUES (DEFAULT, @type, @device_id)`
 	args := pgx.NamedArgs{
-		"@device_id": did,
-		"@type":      at,
+		"device_id": did,
+		"type":      int(at),
 	}
 
 	_, err := cdb.pool.Exec(ctx, query, args)

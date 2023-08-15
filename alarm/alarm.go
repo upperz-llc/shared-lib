@@ -5,7 +5,7 @@ import "time"
 type AlarmType int
 
 const (
-	Connection = iota
+	Connection AlarmType = iota
 	MonitoringState
 )
 

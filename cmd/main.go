@@ -1,19 +1,25 @@
 package main
 
 import (
+	"context"
 	"fmt"
-	"time"
+
+	sharedlib "github.com/upperz-llc/shared-lib"
+	sharedlibalarm "github.com/upperz-llc/shared-lib/alarm"
 )
 
 func main() {
 	fmt.Println("test")
 
-	fmt.Println(time.Now().Unix())
+	db, err := sharedlib.NewCockroachDB(context.TODO())
+	if err != nil {
+		fmt.Println(err)
+	}
 
-	// db, err := sharedlib.NewCockroachDB(context.TODO())
-	// if err != nil {
-	// 	fmt.Println(err)
-	// }
+	err = db.CreateAlarm(context.TODO(), "18b8f73c-b9fd-4b0f-b97e-0c6914efa3e0", sharedlibalarm.Connection)
+	if err != nil {
+		fmt.Println(err)
+	}
 
 	// now := time.Now()
 	// t, err := db.GetDeviceTelemetry(context.TODO(), "18b8f73c-b9fd-4b0f-b97e-0c6914efa3e0", sharedlib.Hour)
