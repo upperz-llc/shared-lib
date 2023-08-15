@@ -3,17 +3,27 @@ package telemetry
 type TelemetryType int
 
 const (
-	Temperature TelemetryType = iota
-	Firmware
-	OTA
+	DeviceTelemetryTemperature TelemetryType = iota
+	DeviceTelemetryFirmware
+	DeviceTelemetryOTA
 )
 
 type Telemetry struct {
 	Type TelemetryType `json:"type"`
 }
 
-type TemperatureTelemetry struct {
+type Temperature struct {
 	Telemetry
 	Temperature int   `json:"temperature"`
 	Timestamp   int64 `json:"timestamp"`
+}
+
+type Firmware struct {
+	FirmwareVersion string `json:"firmware_version"`
+	Timestamp       int64  `json:"timestamp"`
+}
+
+type OTA struct {
+	Status    string `json:"status"`
+	Timestamp int64  `json:"timestamp"`
 }
