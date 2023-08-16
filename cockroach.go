@@ -17,16 +17,27 @@ type CockroachDB struct {
 	pool *pgxpool.Pool
 }
 
-func (cdb *CockroachDB) CloseAlarm(ctx context.Context, aid string) error {
-	query := `UPDATE defaultdb.public.alarm SET active = @active, closed_at = @closed_at WHERE id = @id`
+func (cdb *CockroachDB) CloseAlarm(ctx context.Context, aid string) (*alarm.Alarm, error) {
+	query := `UPDATE defaultdb.public.alarm SET active = @active, closed_at = @closed_at WHERE id = @id RETURNING *`
 	args := pgx.NamedArgs{
 		"id":        aid,
 		"active":    false,
 		"closed_at": time.Now().Format(time.RFC3339),
 	}
 
-	_, err := cdb.pool.Exec(ctx, query, args)
-	return err
+	rows, err := cdb.pool.Query(ctx, query, args)
+	if err != nil {
+		return nil, err
+	}
+
+	cockroachalarm, err := pgx.CollectOneRow[CockroachAlarm](rows, pgx.RowToStructByPos[CockroachAlarm])
+
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil
+	}
+
+	alarm := cockroachalarm.ToAlarm()
+	return &alarm, err
 
 }
 
