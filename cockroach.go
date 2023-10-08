@@ -824,6 +824,62 @@ func (cdb *CockroachDB) AddAuthAndACLs(ctx context.Context, did, username, passw
 	return tx.Commit(ctx)
 }
 
+func (cdb *CockroachDB) AddGatewayACLs(ctx context.Context, gid, did string) error {
+
+	auth, err := cdb.GetAuth(ctx, gid)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	conn, err := cdb.pool.Acquire(ctx)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	defer conn.Release()
+
+	tx, err := conn.BeginTx(ctx, pgx.TxOptions{})
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	query := `INSERT INTO defaultdb.public.acl (id, auth_id, device_id, topic, access, allowed) VALUES
+	(DEFAULT, @auth_id, @device_id, @topic1, @access, @allowed),
+	(DEFAULT, @auth_id, @device_id, @topic2, @access, @allowed),
+	(DEFAULT, @auth_id, @device_id, @topic3, @access, @allowed),
+	(DEFAULT, @auth_id, @device_id, @topic4, @access, @allowed),
+	(DEFAULT, @auth_id, @device_id, @topic5, @access, @allowed),
+	(DEFAULT, @auth_id, @device_id, @topic6, @access, @allowed),
+	(DEFAULT, @auth_id, @device_id, @topic7, @access, @allowed),
+	(DEFAULT, @auth_id, @device_id, @topic8, @access, @allowed),
+	(DEFAULT, @auth_id, @device_id, @topic9, @access, @allowed)`
+	args := pgx.NamedArgs{
+		"auth_id":   auth.ID,
+		"device_id": gid,
+		"topic1":    fmt.Sprintf("DATA/%s", did),
+		"topic2":    fmt.Sprintf("CMD/%s", did),
+		"topic3":    fmt.Sprintf("BCMD/%s", did),
+		"topic4":    fmt.Sprintf("BCMD/%s/response", did),
+		"topic5":    fmt.Sprintf("CONFIG/%s", did),
+		"topic6":    fmt.Sprintf("STATE/%s", did),
+		"topic7":    fmt.Sprintf("BIRTH/%s", did),
+		"topic8":    fmt.Sprintf("DEATH/%s", did),
+		"topic9":    fmt.Sprintf("LWT/%s", did),
+		"access":    "rw",
+		"allowed":   true,
+	}
+	if _, err := tx.Exec(ctx, query, args); err != nil {
+		if err := tx.Rollback(ctx); err != nil {
+			return err
+		}
+		return err
+	}
+
+	return tx.Commit(ctx)
+}
+
 type CockroachUser struct {
 	ID               pgtype.UUID        `json:"id"`
 	UID              pgtype.Text        `json:"uid"`

@@ -15,10 +15,19 @@ func main() {
 		fmt.Println(err)
 	}
 
-	err = db.CloseAlarm(context.TODO(), "d5685832-e833-4ed9-957f-2c2bb2c3afc0")
-	if err != nil {
+	if err := db.AddGatewayACLs(context.TODO(), "d64c9b82-0dce-4908-8132-121b7eb058a5", "c66fb739-e14b-4ff5-b6c8-da291c009944"); err != nil {
 		fmt.Println(err)
+		return
 	}
+
+	// a, _ := db.CreateAlarm(context.TODO(), "18b8f73c-b9fd-4b0f-b97e-0c6914efa3e0", alarm.Connection)
+
+	// ra, err := db.CloseAlarm(context.TODO(), a.ID)
+	// if err != nil {
+	// 	fmt.Println(err)
+	// }
+
+	// fmt.Println(ra.ClosedAt)
 
 	// now := time.Now()
 	// t, err := db.GetDeviceTelemetry(context.TODO(), "18b8f73c-b9fd-4b0f-b97e-0c6914efa3e0", sharedlib.Hour)

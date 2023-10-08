@@ -1,0 +1,3 @@
+export DB_USERNAME=manufacturing_app
+export DB_PASS=efDD3ZZEIXTCAxr_GDnO9Q
+export DB_CLUSTER=hefty-tiger-10243.5xj.cockroachlabs.cloud:26257

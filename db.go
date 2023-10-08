@@ -41,6 +41,7 @@ import (
 type SQLDB interface {
 	// Auth
 	AddAuthAndACLs(ctx context.Context, did, username, password string) error
+	AddGatewayACLs(ctx context.Context, gid, did string) error
 	GetACL(ctx context.Context, did, topic string) (*ACL, error)
 	GetAuth(ctx context.Context, did string) (*Auth, error)
 	// Alarm interface
