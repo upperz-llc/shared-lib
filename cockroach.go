@@ -739,7 +739,8 @@ func (cdb *CockroachDB) CreateDeviceAndManufacturingData(ctx context.Context, md
 
 	query := `INSERT INTO defaultdb.public.device (id, device_type) VALUES (@device_id, @device_type)`
 	args := pgx.NamedArgs{
-		"device_id": md.DeviceID,
+		"device_id":   md.DeviceID,
+		"device_type": md.DeviceType,
 	}
 	if _, err := tx.Exec(ctx, query, args); err != nil {
 		return err
