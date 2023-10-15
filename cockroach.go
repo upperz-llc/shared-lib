@@ -881,6 +881,36 @@ func (cdb *CockroachDB) AddGatewayACLs(ctx context.Context, gid, did string) err
 	return tx.Commit(ctx)
 }
 
+func (cdb *CockroachDB) DeleteGatewayACLs(ctx context.Context, gid, did string) error {
+
+	conn, err := cdb.pool.Acquire(ctx)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	defer conn.Release()
+
+	tx, err := conn.BeginTx(ctx, pgx.TxOptions{})
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	query := `DELETE FROM defaultdb.public.acl WHERE device_id = @gateway_id AND topic LIKE @device_id`
+	args := pgx.NamedArgs{
+		"gateway_id": gid,
+		"device_id":  fmt.Sprintf("%%%s%%", did),
+	}
+	if _, err := tx.Exec(ctx, query, args); err != nil {
+		if err := tx.Rollback(ctx); err != nil {
+			return err
+		}
+		return err
+	}
+
+	return tx.Commit(ctx)
+}
+
 type CockroachUser struct {
 	ID               pgtype.UUID        `json:"id"`
 	UID              pgtype.Text        `json:"uid"`
