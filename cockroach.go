@@ -1036,6 +1036,33 @@ func (cdb *CockroachDB) GetDeviceTelemetry(ctx context.Context, did string, r Te
 	return telemetry, err
 }
 
+func (cdb *CockroachDB) GetInactiveGatewayDevices(ctx context.Context, qt time.Time) ([]Device, error) {
+	query := `SELECT id, connection_status, device_type, firmware_version, monitoring_status, nickname, temperature, owner, last_seen FROM defaultdb.public.device WHERE connection_status = 'connected' AND device_type = '2'
+	AND last_seen < @time`
+	args := pgx.NamedArgs{
+		"time": qt,
+	}
+
+	rows, err := cdb.pool.Query(ctx, query, args)
+	if err != nil {
+		return nil, err
+	}
+
+	cockroachdevices, err := pgx.CollectRows[CockroachDevice](rows, pgx.RowToStructByPos[CockroachDevice])
+
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil
+	}
+
+	devices := make([]Device, 0)
+	for _, v := range cockroachdevices {
+		devices = append(devices, v.ToDevice())
+
+	}
+
+	return devices, err
+}
+
 func NewCockroachDB(ctx context.Context) (*CockroachDB, error) {
 	dbu := os.Getenv("DB_USERNAME")
 	dbp := os.Getenv("DB_PASS")

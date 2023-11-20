@@ -2,6 +2,7 @@ package sharedlib
 
 import (
 	"context"
+	"time"
 
 	"github.com/upperz-llc/shared-lib/alarm"
 )
@@ -71,6 +72,7 @@ type SQLDB interface {
 	GetDevice(ctx context.Context, did string) (*Device, error)
 	GetDevicesByOwner(ctx context.Context, uid string) ([]Device, error)
 	GetDeviceConfig(ctx context.Context, did string) (*DeviceConfig, error)
+
 	UpdateDeviceOwner(ctx context.Context, did, uid string) error
 	UpdateDeviceConnectionStatus(ctx context.Context, did string, connectionStatus DeviceConnectionStatus) error
 	UpdateDeviceFirmwareVersion(ctx context.Context, did, firmwareVersion string) error
@@ -90,4 +92,7 @@ type SQLDB interface {
 	// Manufacturing
 	CreateDeviceAndManufacturingData(ctx context.Context, md ManufacturingData) error
 	CreateManufacturingData(ctx context.Context, md ManufacturingData) error
+
+	// Custom
+	GetInactiveGatewayDevices(ctx context.Context, qt time.Time) ([]Device, error)
 }
