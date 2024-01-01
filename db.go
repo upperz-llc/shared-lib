@@ -95,4 +95,6 @@ type SQLDB interface {
 
 	// Custom
 	GetInactiveGatewayDevices(ctx context.Context, qt time.Time) ([]Device, error)
+
+	UpdateLastSeen(ctx context.Context, did string, qt time.Time) error
 }

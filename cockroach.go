@@ -1063,6 +1063,37 @@ func (cdb *CockroachDB) GetInactiveGatewayDevices(ctx context.Context, qt time.T
 	return devices, err
 }
 
+func (cdb *CockroachDB) UpdateLastSeen(ctx context.Context, did string, timestamp time.Time) error {
+	conn, err := cdb.pool.Acquire(ctx)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	defer conn.Release()
+
+	tx, err := conn.BeginTx(ctx, pgx.TxOptions{})
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	query := `UPDATE defaultdb.public.device SET last_seen = @timestamp WHERE id = @id`
+	args := pgx.NamedArgs{
+		"id":        did,
+		"timestamp": time.Now(),
+	}
+
+	_, err = tx.Exec(ctx, query, args)
+	if err != nil {
+		if err := tx.Rollback(ctx); err != nil {
+			return err
+		}
+		return err
+	}
+
+	return tx.Commit(ctx)
+}
+
 func NewCockroachDB(ctx context.Context) (*CockroachDB, error) {
 	dbu := os.Getenv("DB_USERNAME")
 	dbp := os.Getenv("DB_PASS")
