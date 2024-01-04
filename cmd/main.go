@@ -15,10 +15,21 @@ func main() {
 		fmt.Println(err)
 	}
 
-	if err := db.AddGatewayACLs(context.TODO(), "d64c9b82-0dce-4908-8132-121b7eb058a5", "c66fb739-e14b-4ff5-b6c8-da291c009944"); err != nil {
+	alarms, err := db.QueryAlarmsByUser(context.TODO(), "pLV0ujmdmWh81YdLIWeYrk2q5Qk2")
+	if err != nil {
 		fmt.Println(err)
-		return
 	}
+
+	for _, v := range alarms {
+		fmt.Printf("%+v\n", v)
+	}
+
+	// if devices, err := db.GetInactiveGatewayDevices(context.TODO(), time.Now().Add(-5*time.Minute)); err != nil {
+	// 	fmt.Println(err)
+	// 	return
+	// } else {
+	// 	fmt.Println(len(devices))
+	// }
 
 	// a, _ := db.CreateAlarm(context.TODO(), "18b8f73c-b9fd-4b0f-b97e-0c6914efa3e0", alarm.Connection)
 

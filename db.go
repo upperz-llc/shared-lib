@@ -63,6 +63,7 @@ type SQLDB interface {
 	CloseAlarm(ctx context.Context, aid string) (*alarm.Alarm, error)
 	CreateAlarm(ctx context.Context, did string, at alarm.AlarmType) (*alarm.Alarm, error)
 	QueryAlarm(ctx context.Context, did string, at alarm.AlarmType) (*alarm.Alarm, error)
+	QueryAlarmsByUser(ctx context.Context, uid string) ([]alarm.Alarm, error)
 
 	// // Device interface
 	// AddDeviceTelemetry(ctx context.Context, deviceID string, data *DeviceTelemetry) error

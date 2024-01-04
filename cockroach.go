@@ -144,6 +144,33 @@ func (cdb *CockroachDB) QueryAlarm(ctx context.Context, did string, at alarm.Ala
 	return &alarm, err
 }
 
+func (cdb *CockroachDB) QueryAlarmsByUser(ctx context.Context, uid string) ([]alarm.Alarm, error) {
+	query := `SELECT id, type, device_id, acked_by, acked, active, acked_check_count, closed_at, acked_at, created_at from  defaultdb.public.alarm where device_id in ( SELECT id from  defaultdb.public.device where owner = @owner) AND active = true;`
+	args := pgx.NamedArgs{
+		"owner": uid,
+	}
+
+	rows, err := cdb.pool.Query(ctx, query, args)
+	if err != nil {
+		return nil, err
+	}
+
+	cockroachalarms, err := pgx.CollectRows[CockroachAlarm](rows, pgx.RowToStructByPos[CockroachAlarm])
+
+	if errors.Is(err, pgx.ErrNoRows) {
+		fmt.Println("no rows")
+		return nil, nil
+	}
+
+	alarms := make([]alarm.Alarm, 0)
+	for _, v := range cockroachalarms {
+		alarms = append(alarms, v.ToAlarm())
+
+	}
+
+	return alarms, err
+}
+
 // ************ AUTH *******************
 
 type CockroachACL struct {
