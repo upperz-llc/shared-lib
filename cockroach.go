@@ -942,6 +942,7 @@ type CockroachUser struct {
 	ID               pgtype.UUID        `json:"id"`
 	UID              pgtype.Text        `json:"uid"`
 	Email            pgtype.Text        `json:"email"`
+	Password         pgtype.Text        `json:"password"`
 	NotificationPush pgtype.Bool        `json:"notification_push"`
 	NotificationSMS  pgtype.Bool        `json:"notification_sms"`
 	CreatedAt        pgtype.Timestamptz `json:"created_at"`
