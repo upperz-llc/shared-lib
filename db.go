@@ -84,6 +84,7 @@ type SQLDB interface {
 	CreateUser(ctx context.Context, user User) error
 	DeleteUserByUID(ctx context.Context, key string) error
 	GetUser(ctx context.Context, uid string) (*User, error)
+	GetUserByEmailAddress(ctx context.Context, email string) (*User, error)
 	// GetUserNotificationSettings(ctx context.Context, uid string) (*User, error)
 
 	// Device Telemetry

@@ -709,10 +709,11 @@ func (cdb *CockroachDB) CreateDeviceTelemetry(ctx context.Context, did string, d
 }
 
 func (cdb *CockroachDB) CreateUser(ctx context.Context, user User) error {
-	query := `INSERT INTO defaultdb.public.user (uid, email, created_at) VALUES (@uid, @email, @created_at)`
+	query := `INSERT INTO defaultdb.public.user (uid, email, password, created_at) VALUES (@uid, @email, @password, @created_at)`
 	args := pgx.NamedArgs{
 		"uid":        user.UID,
 		"email":      user.Email,
+		"password":   user.Password,
 		"created_at": time.Unix(time.Now().Unix(), 0).Format(time.RFC3339),
 	}
 
@@ -964,6 +965,10 @@ func (c CockroachUser) ToUser() User {
 		v, _ := c.Email.Value()
 		d.Email = v.(string)
 	}
+	if c.Password.Valid {
+		v, _ := c.Password.Value()
+		d.Password = v.(string)
+	}
 	if c.NotificationPush.Valid {
 		v, _ := c.NotificationPush.Value()
 		d.NotificationPush = v.(bool)
@@ -989,9 +994,30 @@ func (c CockroachUser) ToUser() User {
 }
 
 func (cdb *CockroachDB) GetUser(ctx context.Context, uid string) (*User, error) {
-	query := `SELECT id, uid, email, notification_push, notification_sms, created_at, updated_at, phone_number FROM defaultdb.public.user WHERE uid = @uid`
+	query := `SELECT id, uid, email, password, notification_push, notification_sms, created_at, updated_at, phone_number FROM defaultdb.public.user WHERE uid = @uid`
 	args := pgx.NamedArgs{
 		"uid": uid,
+	}
+
+	rows, err := cdb.pool.Query(ctx, query, args)
+	if err != nil {
+		return nil, err
+	}
+
+	cockroachuser, err := pgx.CollectOneRow[CockroachUser](rows, pgx.RowToStructByPos[CockroachUser])
+
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil
+	}
+
+	user := cockroachuser.ToUser()
+	return &user, err
+}
+
+func (cdb *CockroachDB) GetUserByEmail(ctx context.Context, email string) (*User, error) {
+	query := `SELECT id, uid, email, password, notification_push, notification_sms, created_at, updated_at, phone_number FROM defaultdb.public.user WHERE email = @email`
+	args := pgx.NamedArgs{
+		"email": email,
 	}
 
 	rows, err := cdb.pool.Query(ctx, query, args)
