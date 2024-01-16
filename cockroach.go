@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -12,6 +13,9 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/upperz-llc/shared-lib/alarm"
 )
+
+var once sync.Once
+var db *CockroachDB
 
 type CockroachDB struct {
 	pool *pgxpool.Pool
@@ -1149,25 +1153,29 @@ func (cdb *CockroachDB) UpdateLastSeen(ctx context.Context, did string, timestam
 }
 
 func NewCockroachDB(ctx context.Context) (*CockroachDB, error) {
-	dbu := os.Getenv("DB_USERNAME")
-	dbp := os.Getenv("DB_PASS")
-	dbc := os.Getenv("DB_CLUSTER")
-	// dsn := "postgresql://manufacturing:%s@hefty-tiger-10243.5xj.cockroachlabs.cloud:26257/defaultdb?sslmode=verify-full"
-	dsct := "postgresql://%s:%s@%s/defaultdb?sslmode=verify-full"
-	dscs := fmt.Sprintf(dsct, dbu, dbp, dbc)
 
-	config, err := pgxpool.ParseConfig(dscs)
-	if err != nil {
-		return nil, err
-	}
+	once.Do(func() {
+		dbu := os.Getenv("DB_USERNAME")
+		dbp := os.Getenv("DB_PASS")
+		dbc := os.Getenv("DB_CLUSTER")
+		// dsn := "postgresql://manufacturing:%s@hefty-tiger-10243.5xj.cockroachlabs.cloud:26257/defaultdb?sslmode=verify-full"
+		dsct := "postgresql://%s:%s@%s/defaultdb?sslmode=verify-full"
+		dscs := fmt.Sprintf(dsct, dbu, dbp, dbc)
 
-	pool, err := pgxpool.NewWithConfig(ctx, config)
-	if err != nil {
-		return nil, err
-	}
+		config, err := pgxpool.ParseConfig(dscs)
+		if err != nil {
+			panic(err)
+		}
 
-	return &CockroachDB{
-		pool: pool,
-	}, nil
+		pool, err := pgxpool.NewWithConfig(ctx, config)
+		if err != nil {
+			panic(err)
+		}
 
+		db = &CockroachDB{
+			pool: pool,
+		}
+	})
+
+	return db, nil
 }
