@@ -779,6 +779,7 @@ func (cdb *CockroachDB) CreateDeviceAndManufacturingData(ctx context.Context, md
 		"device_id":        md.DeviceID,
 		"device_type":      md.DeviceType,
 		"measurement_type": md.MeasurementType,
+		"manufactured_at":  md.ManufacturedAt,
 		"username":         md.Username,
 		"password":         md.Password,
 	}
