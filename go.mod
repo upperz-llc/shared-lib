@@ -2,7 +2,10 @@ module github.com/upperz-llc/shared-lib
 
 go 1.21
 
-require github.com/jackc/pgx/v5 v5.4.3
+require (
+	github.com/google/uuid v1.5.0
+	github.com/jackc/pgx/v5 v5.5.2
+)
 
 require (
 	github.com/jackc/pgpassfile v1.0.0 // indirect

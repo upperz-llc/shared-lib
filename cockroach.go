@@ -1019,7 +1019,7 @@ func (cdb *CockroachDB) GetUser(ctx context.Context, uid string) (*User, error) 
 	return &user, err
 }
 
-func (cdb *CockroachDB) GetUserByEmail(ctx context.Context, email string) (*User, error) {
+func (cdb *CockroachDB) GetUserByEmailAddress(ctx context.Context, email string) (*User, error) {
 	query := `SELECT id, uid, email, password, notification_push, notification_sms, created_at, updated_at, phone_number FROM defaultdb.public.user WHERE email = @email`
 	args := pgx.NamedArgs{
 		"email": email,
