@@ -832,6 +832,7 @@ func (cdb *CockroachDB) AddAuthAndACLs(ctx context.Context, did, username, passw
 	(DEFAULT, @auth_id, @device_id, @topic6, @access, @allowed),
 	(DEFAULT, @auth_id, @device_id, @topic7, @access, @allowed),
 	(DEFAULT, @auth_id, @device_id, @topic8, @access, @allowed),
+	(DEFAULT, @auth_id, @device_id, @topic8, @access, @allowed),
 	(DEFAULT, @auth_id, @device_id, @topic9, @access, @allowed)`
 	args = pgx.NamedArgs{
 		"auth_id":   aid,
@@ -841,10 +842,11 @@ func (cdb *CockroachDB) AddAuthAndACLs(ctx context.Context, did, username, passw
 		"topic3":    fmt.Sprintf("BCMD/%s", did),
 		"topic4":    fmt.Sprintf("BCMD/%s/response", did),
 		"topic5":    fmt.Sprintf("CONFIG/%s", did),
-		"topic6":    fmt.Sprintf("STATE/%s", did),
-		"topic7":    fmt.Sprintf("BIRTH/%s", did),
-		"topic8":    fmt.Sprintf("DEATH/%s", did),
-		"topic9":    fmt.Sprintf("LWT/%s", did),
+		"topic6":    fmt.Sprintf("CONFIG/%s/response", did),
+		"topic7":    fmt.Sprintf("STATE/%s", did),
+		"topic8":    fmt.Sprintf("BIRTH/%s", did),
+		"topic9":    fmt.Sprintf("DEATH/%s", did),
+		"topic10":   fmt.Sprintf("LWT/%s", did),
 		"access":    "rw",
 		"allowed":   true,
 	}
@@ -888,6 +890,7 @@ func (cdb *CockroachDB) AddGatewayACLs(ctx context.Context, gid, did string) err
 	(DEFAULT, @auth_id, @device_id, @topic6, @access, @allowed),
 	(DEFAULT, @auth_id, @device_id, @topic7, @access, @allowed),
 	(DEFAULT, @auth_id, @device_id, @topic8, @access, @allowed),
+	(DEFAULT, @auth_id, @device_id, @topic8, @access, @allowed),
 	(DEFAULT, @auth_id, @device_id, @topic9, @access, @allowed)`
 	args := pgx.NamedArgs{
 		"auth_id":   auth.ID,
@@ -897,10 +900,11 @@ func (cdb *CockroachDB) AddGatewayACLs(ctx context.Context, gid, did string) err
 		"topic3":    fmt.Sprintf("BCMD/%s", did),
 		"topic4":    fmt.Sprintf("BCMD/%s/response", did),
 		"topic5":    fmt.Sprintf("CONFIG/%s", did),
-		"topic6":    fmt.Sprintf("STATE/%s", did),
-		"topic7":    fmt.Sprintf("BIRTH/%s", did),
-		"topic8":    fmt.Sprintf("DEATH/%s", did),
-		"topic9":    fmt.Sprintf("LWT/%s", did),
+		"topic6":    fmt.Sprintf("CONFIG/%s/response", did),
+		"topic7":    fmt.Sprintf("STATE/%s", did),
+		"topic8":    fmt.Sprintf("BIRTH/%s", did),
+		"topic9":    fmt.Sprintf("DEATH/%s", did),
+		"topic10":   fmt.Sprintf("LWT/%s", did),
 		"access":    "rw",
 		"allowed":   true,
 	}

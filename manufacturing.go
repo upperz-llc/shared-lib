@@ -13,7 +13,8 @@ const (
 type MeasurementType int
 
 const (
-	INTERNAL MeasurementType = iota
+	NONE MeasurementType = iota - 1
+	INTERNAL
 	MAX31855
 	MAX31856
 )
