@@ -472,7 +472,7 @@ func (c CockroachDeviceConfig) ToDeviceConfig() DeviceConfig {
 }
 
 func (cdb *CockroachDB) GetDeviceConfig(ctx context.Context, did string) (*DeviceConfig, error) {
-	query := `SELECT id, device_id, alert, warning, target, measurement_interval, created_at, updated_at, version FROM defaultdb.public.device_config WHERE device_id = @device_id`
+	query := `SELECT id, device_id, alert, warning, target, measurement_interval, version, created_at, updated_at FROM defaultdb.public.device_config WHERE device_id = @device_id`
 	args := pgx.NamedArgs{
 		"device_id": did,
 	}
