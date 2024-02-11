@@ -96,6 +96,7 @@ type DeviceConfig struct {
 	TargetTemperature  int `json:"temperature_target"`
 	WarningTemperature int `json:"temperature_warning"`
 	TelemetryPeriod    int `json:"telemetry_period"`
+	Version            int `json:"version"`
 }
 
 type DeviceTelemetry struct {

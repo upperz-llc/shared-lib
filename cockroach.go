@@ -440,6 +440,7 @@ type CockroachDeviceConfig struct {
 	Warning             pgtype.Int8
 	Target              pgtype.Int8
 	MeasurementInterval pgtype.Int8
+	Version             pgtype.Int8
 	CreatedAt           pgtype.Timestamptz
 	Updated_at          pgtype.Timestamptz
 }
@@ -462,12 +463,16 @@ func (c CockroachDeviceConfig) ToDeviceConfig() DeviceConfig {
 		v, _ := c.MeasurementInterval.Value()
 		d.TelemetryPeriod = int(v.(int64))
 	}
+	if c.Version.Valid {
+		v, _ := c.Version.Value()
+		d.Version = int(v.(int64))
+	}
 
 	return d
 }
 
 func (cdb *CockroachDB) GetDeviceConfig(ctx context.Context, did string) (*DeviceConfig, error) {
-	query := `SELECT id, device_id, alert, warning, target, measurement_interval, created_at, updated_at FROM defaultdb.public.device_config WHERE device_id = @device_id`
+	query := `SELECT id, device_id, alert, warning, target, measurement_interval, created_at, updated_at, version FROM defaultdb.public.device_config WHERE device_id = @device_id`
 	args := pgx.NamedArgs{
 		"device_id": did,
 	}
