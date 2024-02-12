@@ -20,7 +20,7 @@ func (dms DeviceMonitoringStatus) String() string {
 	case Monitoring:
 		return "monitoring"
 	case WaitingForConfiguration:
-		return "waiting_for_configuration"
+		return "waiting_for_conf"
 	case Alerted:
 		return "alerted"
 	case Errored:
