@@ -9,15 +9,18 @@ import (
 type DeviceMonitoringStatus string
 
 const (
-	Monitoring DeviceMonitoringStatus = "monitoring"
-	Alerted    DeviceMonitoringStatus = "alerted"
-	Errored    DeviceMonitoringStatus = "errored"
+	Monitoring              DeviceMonitoringStatus = "monitoring"
+	WaitingForConfiguration DeviceMonitoringStatus = "waiting_for_configuration"
+	Alerted                 DeviceMonitoringStatus = "alerted"
+	Errored                 DeviceMonitoringStatus = "errored"
 )
 
 func (dms DeviceMonitoringStatus) String() string {
 	switch dms {
 	case Monitoring:
 		return "monitoring"
+	case WaitingForConfiguration:
+		return "waiting_for_configuration"
 	case Alerted:
 		return "alerted"
 	case Errored:
