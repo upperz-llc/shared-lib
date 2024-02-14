@@ -751,7 +751,7 @@ func (cdb *CockroachDB) CreateManufacturingData(ctx context.Context, md manufact
 	return err
 }
 
-func (cdb *CockroachDB) CreateDeviceAndManufacturingData(ctx context.Context, md manufacturing.ManufacturingData) error {
+func (cdb *CockroachDB) CreateDevice(ctx context.Context, deviceID, username, password string, deviceType device.Type, measurementType device.MeasurementType) error {
 	conn, err := cdb.pool.Acquire(ctx)
 	if err != nil {
 		return err
@@ -763,24 +763,60 @@ func (cdb *CockroachDB) CreateDeviceAndManufacturingData(ctx context.Context, md
 		return err
 	}
 
-	query := `INSERT INTO defaultdb.public.device (id, device_type) VALUES (@device_id, @device_type)`
+	query := `INSERT INTO defaultdb.public.auth (id, enabled, username, password, device_id) VALUES (DEFAULT, @enabled, @username, @password, @device_id) RETURNING id`
 	args := pgx.NamedArgs{
-		"device_id":   md.DeviceID,
-		"device_type": md.DeviceType,
+		"enabled":   true,
+		"username":  username,
+		"password":  password,
+		"device_id": deviceID,
+	}
+	var aid pgtype.UUID
+	if err := tx.QueryRow(ctx, query, args).Scan(&aid); err != nil {
+		return err
+	}
+
+	query = `INSERT INTO defaultdb.public.device (id, device_type, measurement_type, connection_status) VALUES (@device_id, @device_type, @measurement_type, @connection_status)`
+	args = pgx.NamedArgs{
+		"device_id":         deviceID,
+		"device_type":       deviceType,
+		"measurement_type":  measurementType,
+		"connection_status": device.Disconnected,
 	}
 	if _, err := tx.Exec(ctx, query, args); err != nil {
 		return err
 	}
 
-	query = `INSERT INTO defaultdb.public.device_manufacturing_data (id, device_id, device_type, manufactured_at, measurement_type, username, password) VALUES (DEFAULT, @device_id, @device_type, @manufactured_at, @measurement_type, @username, @password) RETURNING id`
+	query = `INSERT INTO defaultdb.public.acl (id, auth_id, device_id, topic, access, allowed) VALUES
+	(DEFAULT, @auth_id, @device_id, @topic1, @access, @allowed),
+	(DEFAULT, @auth_id, @device_id, @topic2, @access, @allowed),
+	(DEFAULT, @auth_id, @device_id, @topic3, @access, @allowed),
+	(DEFAULT, @auth_id, @device_id, @topic4, @access, @allowed),
+	(DEFAULT, @auth_id, @device_id, @topic5, @access, @allowed),
+	(DEFAULT, @auth_id, @device_id, @topic6, @access, @allowed),
+	(DEFAULT, @auth_id, @device_id, @topic7, @access, @allowed)`
 	args = pgx.NamedArgs{
-		"device_id":        md.DeviceID,
-		"device_type":      md.DeviceType,
-		"measurement_type": md.MeasurementType,
-		"manufactured_at":  md.ManufacturedAt,
-		"username":         md.Username,
-		"password":         md.Password,
+		"auth_id":   aid,
+		"device_id": deviceID,
+		"topic1":    fmt.Sprintf("DATA/%s", deviceID),
+		"topic2":    fmt.Sprintf("CMD/%s", deviceID),
+		"topic3":    fmt.Sprintf("CMD/%s/response", deviceID),
+		"topic4":    fmt.Sprintf("CONFIG/%s", deviceID),
+		"topic5":    fmt.Sprintf("CONFIG/%s/response", deviceID),
+		"topic6":    fmt.Sprintf("STATE/%s", deviceID),
+		"topic7":    fmt.Sprintf("LWT/%s", deviceID),
+		"access":    "rw",
+		"allowed":   true,
 	}
+
+	// query = `INSERT INTO defaultdb.public.device_manufacturing_data (id, device_id, device_type, manufactured_at, measurement_type, username, password) VALUES (DEFAULT, @device_id, @device_type, @manufactured_at, @measurement_type, @username, @password) RETURNING id`
+	// args = pgx.NamedArgs{
+	// 	"device_id":        md.DeviceID,
+	// 	"device_type":      md.DeviceType,
+	// 	"measurement_type": md.MeasurementType,
+	// 	"manufactured_at":  md.ManufacturedAt,
+	// 	"username":         md.Username,
+	// 	"password":         md.Password,
+	// }
 	if _, err := tx.Exec(ctx, query, args); err != nil {
 		if err := tx.Rollback(ctx); err != nil {
 			return err
@@ -805,12 +841,11 @@ func (cdb *CockroachDB) AddAuthAndACLs(ctx context.Context, did, username, passw
 		return err
 	}
 
-	query := `INSERT INTO defaultdb.public.auth (id, device_id, enabled, username, password) VALUES (DEFAULT, @device_id, @enabled, @username, @password) RETURNING id`
+	query := `INSERT INTO defaultdb.public.auth (id, enabled, username, password) VALUES (DEFAULT, @enabled, @username, @password) RETURNING id`
 	args := pgx.NamedArgs{
-		"device_id": did,
-		"enabled":   true,
-		"username":  username,
-		"password":  password,
+		"enabled":  true,
+		"username": username,
+		"password": password,
 	}
 	var aid pgtype.UUID
 	if err := tx.QueryRow(ctx, query, args).Scan(&aid); err != nil {
@@ -825,9 +860,7 @@ func (cdb *CockroachDB) AddAuthAndACLs(ctx context.Context, did, username, passw
 	(DEFAULT, @auth_id, @device_id, @topic5, @access, @allowed),
 	(DEFAULT, @auth_id, @device_id, @topic6, @access, @allowed),
 	(DEFAULT, @auth_id, @device_id, @topic7, @access, @allowed),
-	(DEFAULT, @auth_id, @device_id, @topic8, @access, @allowed),
-	(DEFAULT, @auth_id, @device_id, @topic8, @access, @allowed),
-	(DEFAULT, @auth_id, @device_id, @topic9, @access, @allowed)`
+	(DEFAULT, @auth_id, @device_id, @topic8, @access, @allowed)`
 	args = pgx.NamedArgs{
 		"auth_id":   aid,
 		"device_id": did,
@@ -838,9 +871,7 @@ func (cdb *CockroachDB) AddAuthAndACLs(ctx context.Context, did, username, passw
 		"topic5":    fmt.Sprintf("CONFIG/%s", did),
 		"topic6":    fmt.Sprintf("CONFIG/%s/response", did),
 		"topic7":    fmt.Sprintf("STATE/%s", did),
-		"topic8":    fmt.Sprintf("BIRTH/%s", did),
-		"topic9":    fmt.Sprintf("DEATH/%s", did),
-		"topic10":   fmt.Sprintf("LWT/%s", did),
+		"topic8":    fmt.Sprintf("LWT/%s", did),
 		"access":    "rw",
 		"allowed":   true,
 	}

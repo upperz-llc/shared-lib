@@ -64,8 +64,8 @@ type SQLDB interface {
 	GetDeviceTelemetry(ctx context.Context, did string, r device.TelemetryRange) ([]device.Telemetry, error)
 
 	// Manufacturing
-	CreateDeviceAndManufacturingData(ctx context.Context, md manufacturing.ManufacturingData) error
-	CreateManufacturingData(ctx context.Context, md manufacturing.ManufacturingData) error
+	CreateDevice(ctx context.Context, md manufacturing.ManufacturingData) error
+	// CreateManufacturingData(ctx context.Context, md manufacturing.ManufacturingData) error
 
 	// Custom
 	GetInactiveGatewayDevices(ctx context.Context, qt time.Time) ([]device.Device, error)
