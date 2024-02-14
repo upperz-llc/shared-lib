@@ -99,7 +99,6 @@ type Device struct {
 	ConnectionStatus ConnectionStatus `json:"connection_status"`
 	MonitoringStatus MonitoringStatus `json:"monitoring_status"`
 	FirmwareVersion  string           `json:"firmware_version"`
-	Nickname         string           `json:"nickname"`
 	Owner            string           `json:"owner"`
 }
 

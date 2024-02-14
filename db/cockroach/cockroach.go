@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"os/user"
 	"sync"
 	"time"
 
@@ -16,6 +15,7 @@ import (
 	"github.com/upperz-llc/shared-lib/auth"
 	"github.com/upperz-llc/shared-lib/device"
 	"github.com/upperz-llc/shared-lib/manufacturing"
+	"github.com/upperz-llc/shared-lib/user"
 )
 
 var once sync.Once
@@ -364,15 +364,12 @@ func (cdb *CockroachDB) CreateDeviceConfig(ctx context.Context, did string, conf
 
 // ************* DEVICE *****************
 type CockroachDevice struct {
-	ID               pgtype.UUID        `json:"id"`
-	ConnectionStatus pgtype.Text        `json:"connection_status"`
-	DeviceType       pgtype.Int8        `json:"device_type"`
-	FirmwareVersion  pgtype.Text        `json:"firmware_version"`
-	MonitoringStatus pgtype.Text        `json:"monitoring_status"`
-	Nickname         pgtype.Text        `json:"nickname"`
-	Temperature      pgtype.Int8        `json:"temperature"`
-	Owner            pgtype.Text        `json:"owner"`
-	LastSeen         pgtype.Timestamptz `json:"last_seen"`
+	ID               pgtype.UUID `json:"id"`
+	ConnectionStatus pgtype.Int8 `json:"connection_status"`
+	Type             pgtype.Int8 `json:"type"`
+	FirmwareVersion  pgtype.Text `json:"firmware_version"`
+	MonitoringStatus pgtype.Int8 `json:"monitoring_status"`
+	Owner            pgtype.UUID `json:"owner"`
 }
 
 func (c CockroachDevice) ToDevice() device.Device {
@@ -383,11 +380,11 @@ func (c CockroachDevice) ToDevice() device.Device {
 	}
 	if c.ConnectionStatus.Valid {
 		v, _ := c.ConnectionStatus.Value()
-		d.ConnectionStatus = device.ConnectionStatus(v.(int))
+		d.ConnectionStatus = device.ConnectionStatus(v.(int64))
 	}
-	if c.DeviceType.Valid {
-		v, _ := c.DeviceType.Value()
-		d.Type = v.(device.Type)
+	if c.Type.Valid {
+		v, _ := c.Type.Value()
+		d.Type = device.Type(v.(int64))
 	}
 	if c.FirmwareVersion.Valid {
 		v, _ := c.FirmwareVersion.Value()
@@ -395,11 +392,7 @@ func (c CockroachDevice) ToDevice() device.Device {
 	}
 	if c.MonitoringStatus.Valid {
 		v, _ := c.MonitoringStatus.Value()
-		d.MonitoringStatus = device.MonitoringStatus(v.(int))
-	}
-	if c.Nickname.Valid {
-		v, _ := c.Nickname.Value()
-		d.Nickname = v.(string)
+		d.MonitoringStatus = device.MonitoringStatus(v.(int64))
 	}
 	if c.Owner.Valid {
 		v, _ := c.Owner.Value()
@@ -409,7 +402,7 @@ func (c CockroachDevice) ToDevice() device.Device {
 }
 
 func (cdb *CockroachDB) GetDevice(ctx context.Context, did string) (*device.Device, error) {
-	query := `SELECT id, connection_status, device_type, firmware_version, monitoring_status, nickname, temperature, owner, last_seen FROM defaultdb.public.device WHERE id = @device_id`
+	query := `SELECT id, connection_status, device_type, firmware_version, monitoring_status, owner FROM defaultdb.public.device WHERE id = @device_id`
 	args := pgx.NamedArgs{
 		"device_id": did,
 	}
@@ -419,10 +412,12 @@ func (cdb *CockroachDB) GetDevice(ctx context.Context, did string) (*device.Devi
 		return nil, err
 	}
 
-	cockroachdevice, err := pgx.CollectOneRow[CockroachDevice](rows, pgx.RowToStructByPos[CockroachDevice])
-
-	if errors.Is(err, pgx.ErrNoRows) {
-		return nil, nil
+	cockroachdevice, err := pgx.CollectExactlyOneRow[CockroachDevice](rows, pgx.RowToStructByPos[CockroachDevice])
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, err
 	}
 
 	device := cockroachdevice.ToDevice()
@@ -666,54 +661,54 @@ func (cdb *CockroachDB) UpdateDeviceOTAStatus(ctx context.Context, did string, s
 	return tx.Commit(ctx)
 }
 
-func (cdb *CockroachDB) CreateDeviceTelemetry(ctx context.Context, did string, data device.Telemetry) error {
-	conn, err := cdb.pool.Acquire(ctx)
-	if err != nil {
+// func (cdb *CockroachDB) CreateDeviceTelemetry(ctx context.Context, did string, data device.Telemetry) error {
+// 	conn, err := cdb.pool.Acquire(ctx)
+// 	if err != nil {
 
-		return err
-	}
-	defer conn.Release()
+// 		return err
+// 	}
+// 	defer conn.Release()
 
-	tx, err := conn.BeginTx(ctx, pgx.TxOptions{})
-	if err != nil {
+// 	tx, err := conn.BeginTx(ctx, pgx.TxOptions{})
+// 	if err != nil {
 
-		return err
-	}
+// 		return err
+// 	}
 
-	query := `INSERT INTO defaultdb.public.temperature (device_id, temperature, timestamp) VALUES (@device_id, @temperature, @timestamp)`
-	args := pgx.NamedArgs{
-		"device_id":   did,
-		"temperature": data.Temperature,
-		"timestamp":   data.Timestamp,
-	}
+// 	query := `INSERT INTO defaultdb.public.temperature (device_id, temperature, timestamp) VALUES (@device_id, @temperature, @timestamp)`
+// 	args := pgx.NamedArgs{
+// 		"device_id":   did,
+// 		"temperature": data.Temperature,
+// 		"timestamp":   data.Timestamp,
+// 	}
 
-	_, err = tx.Exec(ctx, query, args)
-	if err != nil {
-		if err := tx.Rollback(ctx); err != nil {
-			return err
-		}
-		return err
-	}
+// 	_, err = tx.Exec(ctx, query, args)
+// 	if err != nil {
+// 		if err := tx.Rollback(ctx); err != nil {
+// 			return err
+// 		}
+// 		return err
+// 	}
 
-	query = `UPDATE defaultdb.public.device SET last_seen = @timestamp, temperature = @temperature WHERE id = @id`
-	args = pgx.NamedArgs{
-		"id":          did,
-		"temperature": data.Temperature,
-		"timestamp":   data.Timestamp,
-	}
+// 	query = `UPDATE defaultdb.public.device SET last_seen = @timestamp, temperature = @temperature WHERE id = @id`
+// 	args = pgx.NamedArgs{
+// 		"id":          did,
+// 		"temperature": data.Temperature,
+// 		"timestamp":   data.Timestamp,
+// 	}
 
-	_, err = tx.Exec(ctx, query, args)
-	if err != nil {
-		if err := tx.Rollback(ctx); err != nil {
-			return err
-		}
-		return err
-	}
+// 	_, err = tx.Exec(ctx, query, args)
+// 	if err != nil {
+// 		if err := tx.Rollback(ctx); err != nil {
+// 			return err
+// 		}
+// 		return err
+// 	}
 
-	return tx.Commit(ctx)
-}
+// 	return tx.Commit(ctx)
+// }
 
-func (cdb *CockroachDB) CreateUser(ctx context.Context, user User) error {
+func (cdb *CockroachDB) CreateUser(ctx context.Context, user user.User) error {
 	query := `INSERT INTO defaultdb.public.user (uid, email, password, created_at) VALUES (@uid, @email, @password, @created_at)`
 	args := pgx.NamedArgs{
 		"uid":        user.UID,
@@ -1001,7 +996,7 @@ func (c CockroachUser) ToUser() user.User {
 	return d
 }
 
-func (cdb *CockroachDB) GetUser(ctx context.Context, uid string) (*User, error) {
+func (cdb *CockroachDB) GetUser(ctx context.Context, uid string) (*user.User, error) {
 	query := `SELECT id, uid, email, password, notification_push, notification_sms, created_at, updated_at, phone_number FROM defaultdb.public.user WHERE uid = @uid`
 	args := pgx.NamedArgs{
 		"uid": uid,
@@ -1022,7 +1017,7 @@ func (cdb *CockroachDB) GetUser(ctx context.Context, uid string) (*User, error) 
 	return &user, err
 }
 
-func (cdb *CockroachDB) GetUserByEmailAddress(ctx context.Context, email string) (*User, error) {
+func (cdb *CockroachDB) GetUserByEmailAddress(ctx context.Context, email string) (*user.User, error) {
 	query := `SELECT id, uid, email, password, notification_push, notification_sms, created_at, updated_at, phone_number FROM defaultdb.public.user WHERE email = @email`
 	args := pgx.NamedArgs{
 		"email": email,
@@ -1050,53 +1045,53 @@ type CockroachTelemetry struct {
 	Timestamp   pgtype.Timestamptz `json:"timestamp"`
 }
 
-func (c CockroachTelemetry) ToDeviceTelemetry() device.Telemetry {
-	d := device.Telemetry{}
-	if c.ID.Valid {
-		v, _ := c.ID.Value()
-		d.ID = v.(string)
-	}
-	if c.DeviceID.Valid {
-		v, _ := c.DeviceID.Value()
-		d.DeviceID = v.(string)
-	}
-	if c.Temperature.Valid {
-		v, _ := c.Temperature.Value()
-		d.Temperature = v.(int64)
-	}
-	if c.Timestamp.Valid {
-		v, _ := c.Timestamp.Value()
-		d.Timestamp = v.(time.Time)
-	}
+// func (c CockroachTelemetry) ToDeviceTelemetry() device.Telemetry {
+// 	d := device.Temperature{}
+// 	if c.ID.Valid {
+// 		v, _ := c.ID.Value()
+// 		d.ID = v.(string)
+// 	}
+// 	if c.DeviceID.Valid {
+// 		v, _ := c.DeviceID.Value()
+// 		d.DeviceID = v.(string)
+// 	}
+// 	if c.Temperature.Valid {
+// 		v, _ := c.Temperature.Value()
+// 		d.Temperature = v.(int64)
+// 	}
+// 	if c.Timestamp.Valid {
+// 		v, _ := c.Timestamp.Value()
+// 		d.Timestamp = v.(time.Time)
+// 	}
 
-	return d
-}
+// 	return d
+// }
 
-func (cdb *CockroachDB) GetDeviceTelemetry(ctx context.Context, did string, r device.TelemetryRange) ([]device.Telemetry, error) {
-	query := `SELECT id, device_id, temperature, timestamp FROM defaultdb.public.temperature WHERE device_id = @device_id AND timestamp >= @range`
-	args := pgx.NamedArgs{
-		"device_id": did,
-		"range":     r.ToTime(),
-	}
+// func (cdb *CockroachDB) GetDeviceTelemetry(ctx context.Context, did string, r device.TelemetryRange) ([]device.Telemetry, error) {
+// 	query := `SELECT id, device_id, temperature, timestamp FROM defaultdb.public.temperature WHERE device_id = @device_id AND timestamp >= @range`
+// 	args := pgx.NamedArgs{
+// 		"device_id": did,
+// 		"range":     r.ToTime(),
+// 	}
 
-	rows, err := cdb.pool.Query(ctx, query, args)
-	if err != nil {
-		return nil, err
-	}
+// 	rows, err := cdb.pool.Query(ctx, query, args)
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	cockroachtelemetry, err := pgx.CollectRows[CockroachTelemetry](rows, pgx.RowToStructByPos[CockroachTelemetry])
+// 	cockroachtelemetry, err := pgx.CollectRows[CockroachTelemetry](rows, pgx.RowToStructByPos[CockroachTelemetry])
 
-	if errors.Is(err, pgx.ErrNoRows) {
-		return nil, nil
-	}
+// 	if errors.Is(err, pgx.ErrNoRows) {
+// 		return nil, nil
+// 	}
 
-	telemetry := make([]device.Telemetry, 0)
-	for _, v := range cockroachtelemetry {
-		telemetry = append(telemetry, v.ToDeviceTelemetry())
-	}
+// 	telemetry := make([]device.Telemetry, 0)
+// 	for _, v := range cockroachtelemetry {
+// 		telemetry = append(telemetry, v.ToDeviceTelemetry())
+// 	}
 
-	return telemetry, err
-}
+// 	return telemetry, err
+// }
 
 func (cdb *CockroachDB) GetInactiveGatewayDevices(ctx context.Context, qt time.Time) ([]device.Device, error) {
 	query := `SELECT id, connection_status, device_type, firmware_version, monitoring_status, nickname, temperature, owner, last_seen FROM defaultdb.public.device WHERE connection_status = 'connected' AND device_type = '2'
