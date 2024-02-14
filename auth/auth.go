@@ -1,4 +1,4 @@
-package sharedlib
+package auth
 
 import "time"
 

@@ -1,4 +1,4 @@
-package sharedlib
+package user
 
 import "time"
 

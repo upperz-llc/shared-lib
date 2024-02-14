@@ -1,10 +1,11 @@
-package sharedlib
+package cockroach
 
 import (
 	"context"
 	"errors"
 	"fmt"
 	"os"
+	"os/user"
 	"sync"
 	"time"
 
@@ -12,6 +13,9 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/upperz-llc/shared-lib/alarm"
+	"github.com/upperz-llc/shared-lib/auth"
+	"github.com/upperz-llc/shared-lib/device"
+	"github.com/upperz-llc/shared-lib/manufacturing"
 )
 
 var once sync.Once
@@ -187,8 +191,8 @@ type CockroachACL struct {
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 }
 
-func (c CockroachACL) ToACL() ACL {
-	d := ACL{}
+func (c CockroachACL) ToACL() auth.ACL {
+	d := auth.ACL{}
 	if c.ID.Valid {
 		v, _ := c.ID.Value()
 		d.ID = v.(string)
@@ -221,7 +225,7 @@ func (c CockroachACL) ToACL() ACL {
 	return d
 }
 
-func (cdb *CockroachDB) GetACL(ctx context.Context, did, topic string) (*ACL, error) {
+func (cdb *CockroachDB) GetACL(ctx context.Context, did, topic string) (*auth.ACL, error) {
 	query := `SELECT id, auth_id, device_id, allowed, topic, access, created_at FROM defaultdb.public.acl WHERE device_id = @device_id AND topic = @topic`
 	args := pgx.NamedArgs{
 		"device_id": did,
@@ -252,8 +256,8 @@ type CockroachAuth struct {
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 }
 
-func (c CockroachAuth) ToAuth() Auth {
-	d := Auth{}
+func (c CockroachAuth) ToAuth() auth.Auth {
+	d := auth.Auth{}
 	if c.ID.Valid {
 		v, _ := c.ID.Value()
 		d.ID = v.(string)
@@ -282,7 +286,7 @@ func (c CockroachAuth) ToAuth() Auth {
 	return d
 }
 
-func (cdb *CockroachDB) GetAuth(ctx context.Context, did string) (*Auth, error) {
+func (cdb *CockroachDB) GetAuth(ctx context.Context, did string) (*auth.Auth, error) {
 	query := `SELECT id, device_id, enabled, username, password, created_at FROM defaultdb.public.auth WHERE device_id = @device_id`
 	args := pgx.NamedArgs{
 		"device_id": did,
@@ -312,7 +316,7 @@ func (cdb *CockroachDB) GetAuth(ctx context.Context, did string) (*Auth, error) 
 
 // **************************************
 
-func (cdb *CockroachDB) CreateDeviceConfig(ctx context.Context, did string, config DeviceConfig) error {
+func (cdb *CockroachDB) CreateDeviceConfig(ctx context.Context, did string, config device.Config) error {
 	conn, err := cdb.pool.Acquire(ctx)
 	if err != nil {
 		return err
@@ -371,31 +375,27 @@ type CockroachDevice struct {
 	LastSeen         pgtype.Timestamptz `json:"last_seen"`
 }
 
-func (c CockroachDevice) ToDevice() Device {
-	d := Device{}
+func (c CockroachDevice) ToDevice() device.Device {
+	d := device.Device{}
 	if c.ID.Valid {
 		v, _ := c.ID.Value()
 		d.ID = v.(string)
 	}
 	if c.ConnectionStatus.Valid {
 		v, _ := c.ConnectionStatus.Value()
-		d.ConnectionStatus = DeviceConnectionStatus(v.(string))
+		d.ConnectionStatus = device.ConnectionStatus(v.(int))
 	}
 	if c.DeviceType.Valid {
 		v, _ := c.DeviceType.Value()
-		d.DeviceType = v.(int64)
+		d.Type = v.(device.Type)
 	}
 	if c.FirmwareVersion.Valid {
 		v, _ := c.FirmwareVersion.Value()
 		d.FirmwareVersion = v.(string)
 	}
-	if c.LastSeen.Valid {
-		v, _ := c.LastSeen.Value()
-		d.LastSeen = v.(time.Time)
-	}
 	if c.MonitoringStatus.Valid {
 		v, _ := c.MonitoringStatus.Value()
-		d.MonitoringStatus = DeviceMonitoringStatus(v.(string))
+		d.MonitoringStatus = device.MonitoringStatus(v.(int))
 	}
 	if c.Nickname.Valid {
 		v, _ := c.Nickname.Value()
@@ -405,15 +405,10 @@ func (c CockroachDevice) ToDevice() Device {
 		v, _ := c.Owner.Value()
 		d.Owner = v.(string)
 	}
-	if c.Temperature.Valid {
-		v, _ := c.Temperature.Value()
-		d.Temperature = v.(int64)
-	}
-
 	return d
 }
 
-func (cdb *CockroachDB) GetDevice(ctx context.Context, did string) (*Device, error) {
+func (cdb *CockroachDB) GetDevice(ctx context.Context, did string) (*device.Device, error) {
 	query := `SELECT id, connection_status, device_type, firmware_version, monitoring_status, nickname, temperature, owner, last_seen FROM defaultdb.public.device WHERE id = @device_id`
 	args := pgx.NamedArgs{
 		"device_id": did,
@@ -446,8 +441,8 @@ type CockroachDeviceConfig struct {
 	Updated_at          pgtype.Timestamptz
 }
 
-func (c CockroachDeviceConfig) ToDeviceConfig() DeviceConfig {
-	d := DeviceConfig{}
+func (c CockroachDeviceConfig) ToDeviceConfig() device.Config {
+	d := device.Config{}
 	if c.Alert.Valid {
 		v, _ := c.Alert.Value()
 		d.AlertTemperature = int(v.(int64))
@@ -472,7 +467,7 @@ func (c CockroachDeviceConfig) ToDeviceConfig() DeviceConfig {
 	return d
 }
 
-func (cdb *CockroachDB) GetDeviceConfig(ctx context.Context, did string) (*DeviceConfig, error) {
+func (cdb *CockroachDB) GetDeviceConfig(ctx context.Context, did string) (*device.Config, error) {
 	query := `SELECT id, device_id, alert, warning, target, measurement_interval, version, created_at, updated_at FROM defaultdb.public.device_config WHERE device_id = @device_id`
 	args := pgx.NamedArgs{
 		"device_id": did,
@@ -493,7 +488,7 @@ func (cdb *CockroachDB) GetDeviceConfig(ctx context.Context, did string) (*Devic
 	return &deviceconfig, err
 }
 
-func (cdb *CockroachDB) GetDevicesByOwner(ctx context.Context, uid string) ([]Device, error) {
+func (cdb *CockroachDB) GetDevicesByOwner(ctx context.Context, uid string) ([]device.Device, error) {
 	query := `SELECT id, connection_status, device_type, firmware_version, monitoring_status, nickname, temperature, owner, last_seen FROM defaultdb.public.device WHERE owner = @uid`
 	args := pgx.NamedArgs{
 		"uid": uid,
@@ -510,7 +505,7 @@ func (cdb *CockroachDB) GetDevicesByOwner(ctx context.Context, uid string) ([]De
 		return nil, nil
 	}
 
-	devices := make([]Device, 0)
+	devices := make([]device.Device, 0)
 	for _, v := range cockroachdevices {
 		devices = append(devices, v.ToDevice())
 
@@ -564,7 +559,7 @@ func (cdb *CockroachDB) UpdateDeviceFirmwareVersion(ctx context.Context, did, fi
 	return tx.Commit(ctx)
 }
 
-func (cdb *CockroachDB) UpdateDeviceConnectionStatus(ctx context.Context, did string, status DeviceConnectionStatus) error {
+func (cdb *CockroachDB) UpdateDeviceConnectionStatus(ctx context.Context, did string, status device.ConnectionStatus) error {
 	conn, err := cdb.pool.Acquire(ctx)
 	if err != nil {
 		return err
@@ -594,7 +589,7 @@ func (cdb *CockroachDB) UpdateDeviceConnectionStatus(ctx context.Context, did st
 	return tx.Commit(ctx)
 }
 
-func (cdb *CockroachDB) UpdateDeviceMonitoringStatus(ctx context.Context, did string, status DeviceMonitoringStatus) error {
+func (cdb *CockroachDB) UpdateDeviceMonitoringStatus(ctx context.Context, did string, status device.MonitoringStatus) error {
 	conn, err := cdb.pool.Acquire(ctx)
 	if err != nil {
 		fmt.Println(err)
@@ -626,7 +621,7 @@ func (cdb *CockroachDB) UpdateDeviceMonitoringStatus(ctx context.Context, did st
 	return tx.Commit(ctx)
 }
 
-func (cdb *CockroachDB) UpdateDeviceOTAStatus(ctx context.Context, did string, status OTAStatus, timestamp int64) error {
+func (cdb *CockroachDB) UpdateDeviceOTAStatus(ctx context.Context, did string, status device.OTAStatus, timestamp int64) error {
 	conn, err := cdb.pool.Acquire(ctx)
 	if err != nil {
 		fmt.Println(err)
@@ -671,7 +666,7 @@ func (cdb *CockroachDB) UpdateDeviceOTAStatus(ctx context.Context, did string, s
 	return tx.Commit(ctx)
 }
 
-func (cdb *CockroachDB) CreateDeviceTelemetry(ctx context.Context, did string, data DeviceTelemetry) error {
+func (cdb *CockroachDB) CreateDeviceTelemetry(ctx context.Context, did string, data device.Telemetry) error {
 	conn, err := cdb.pool.Acquire(ctx)
 	if err != nil {
 		fmt.Println(err)
@@ -745,7 +740,7 @@ func (cdb *CockroachDB) DeleteUserByUID(ctx context.Context, uid string) error {
 
 // asdadasdadaddadadasdas
 
-func (cdb *CockroachDB) CreateManufacturingData(ctx context.Context, md ManufacturingData) error {
+func (cdb *CockroachDB) CreateManufacturingData(ctx context.Context, md manufacturing.ManufacturingData) error {
 	query := `INSERT INTO defaultdb.public.device_manufacturing_info (device_id, device_type, manufactured_at, measurement_type, username, password) VALUES (@device_id, @device_type, @manufactured_at, @measurement_type, @username, @password)`
 	args := pgx.NamedArgs{
 		"device_id":        md.DeviceID,
@@ -761,7 +756,7 @@ func (cdb *CockroachDB) CreateManufacturingData(ctx context.Context, md Manufact
 	return err
 }
 
-func (cdb *CockroachDB) CreateDeviceAndManufacturingData(ctx context.Context, md ManufacturingData) error {
+func (cdb *CockroachDB) CreateDeviceAndManufacturingData(ctx context.Context, md manufacturing.ManufacturingData) error {
 	conn, err := cdb.pool.Acquire(ctx)
 	if err != nil {
 		fmt.Println(err)
@@ -966,8 +961,8 @@ type CockroachUser struct {
 	PhoneNumber      pgtype.Text        `json:"phone_number"`
 }
 
-func (c CockroachUser) ToUser() User {
-	d := User{}
+func (c CockroachUser) ToUser() user.User {
+	d := user.User{}
 	if c.ID.Valid {
 		v, _ := c.ID.Value()
 		d.ID = v.(string)
@@ -1057,8 +1052,8 @@ type CockroachTelemetry struct {
 	Timestamp   pgtype.Timestamptz `json:"timestamp"`
 }
 
-func (c CockroachTelemetry) ToDeviceTelemetry() DeviceTelemetry {
-	d := DeviceTelemetry{}
+func (c CockroachTelemetry) ToDeviceTelemetry() device.Telemetry {
+	d := device.Telemetry{}
 	if c.ID.Valid {
 		v, _ := c.ID.Value()
 		d.ID = v.(string)
@@ -1079,7 +1074,7 @@ func (c CockroachTelemetry) ToDeviceTelemetry() DeviceTelemetry {
 	return d
 }
 
-func (cdb *CockroachDB) GetDeviceTelemetry(ctx context.Context, did string, r TelemetryRange) ([]DeviceTelemetry, error) {
+func (cdb *CockroachDB) GetDeviceTelemetry(ctx context.Context, did string, r device.TelemetryRange) ([]device.Telemetry, error) {
 	query := `SELECT id, device_id, temperature, timestamp FROM defaultdb.public.temperature WHERE device_id = @device_id AND timestamp >= @range`
 	args := pgx.NamedArgs{
 		"device_id": did,
@@ -1097,7 +1092,7 @@ func (cdb *CockroachDB) GetDeviceTelemetry(ctx context.Context, did string, r Te
 		return nil, nil
 	}
 
-	telemetry := make([]DeviceTelemetry, 0)
+	telemetry := make([]device.Telemetry, 0)
 	for _, v := range cockroachtelemetry {
 		telemetry = append(telemetry, v.ToDeviceTelemetry())
 	}
@@ -1105,7 +1100,7 @@ func (cdb *CockroachDB) GetDeviceTelemetry(ctx context.Context, did string, r Te
 	return telemetry, err
 }
 
-func (cdb *CockroachDB) GetInactiveGatewayDevices(ctx context.Context, qt time.Time) ([]Device, error) {
+func (cdb *CockroachDB) GetInactiveGatewayDevices(ctx context.Context, qt time.Time) ([]device.Device, error) {
 	query := `SELECT id, connection_status, device_type, firmware_version, monitoring_status, nickname, temperature, owner, last_seen FROM defaultdb.public.device WHERE connection_status = 'connected' AND device_type = '2'
 	AND last_seen < @time`
 	args := pgx.NamedArgs{
@@ -1123,7 +1118,7 @@ func (cdb *CockroachDB) GetInactiveGatewayDevices(ctx context.Context, qt time.T
 		return nil, nil
 	}
 
-	devices := make([]Device, 0)
+	devices := make([]device.Device, 0)
 	for _, v := range cockroachdevices {
 		devices = append(devices, v.ToDevice())
 

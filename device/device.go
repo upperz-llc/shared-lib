@@ -1,4 +1,4 @@
-package sharedlib
+package device
 
 import (
 	"time"
@@ -6,21 +6,21 @@ import (
 
 // ********** ENUMS AND CONSTANTS ************
 
-type DeviceMonitoringStatus string
+type MonitoringStatus int
 
 const (
-	Monitoring              DeviceMonitoringStatus = "monitoring"
-	WaitingForConfiguration DeviceMonitoringStatus = "waiting_for_configuration"
-	Alerted                 DeviceMonitoringStatus = "alerted"
-	Errored                 DeviceMonitoringStatus = "errored"
+	Errored MonitoringStatus = iota - 1
+	WaitingForConfiguration
+	Monitoring
+	Alerted
 )
 
-func (dms DeviceMonitoringStatus) String() string {
+func (dms MonitoringStatus) String() string {
 	switch dms {
 	case Monitoring:
 		return "monitoring"
 	case WaitingForConfiguration:
-		return "waiting_for_conf"
+		return "waiting_for_configuration"
 	case Alerted:
 		return "alerted"
 	case Errored:
@@ -29,26 +29,22 @@ func (dms DeviceMonitoringStatus) String() string {
 	return "unknown"
 }
 
-type DeviceConnectionStatus string
+type ConnectionStatus int
 
 const (
-	Connected    DeviceConnectionStatus = "connected"
-	Disconnected DeviceConnectionStatus = "disconnected"
+	Connected ConnectionStatus = iota
+	Disconnected
 )
 
-type DeviceCommands int
-
-const (
-	PING DeviceCommands = iota
-	OTA
-)
-
-type BrokerCommands int
-
-const (
-	BIND BrokerCommands = iota
-	UNBIND
-)
+func (dms ConnectionStatus) String() string {
+	switch dms {
+	case Connected:
+		return "connected"
+	case Disconnected:
+		return "disconnected"
+	}
+	return "unknown"
+}
 
 type OTAStatus int
 
@@ -76,25 +72,38 @@ func (otas OTAStatus) String() string {
 	return "unknown"
 }
 
+type Type int
+
+const (
+	WIFI Type = iota - 1
+	GATEWAY
+	GATEWAYDEVICE
+)
+
+type MeasurementType int
+
+const (
+	NONE MeasurementType = iota - 1
+	INTERNAL
+	MAX31855
+	MAX31856
+)
+
 // ***********************************************
 
 // TODO : Add telemetry_timeline
 // TODO : Add alarm_timeline
 type Device struct {
-	ID               string                 `json:"id"`
-	DeviceType       int64                  `json:"device_type"`
-	LastSeen         time.Time              `json:"last_seen"`
-	ConnectionStatus DeviceConnectionStatus `json:"connection_status"`
-	MonitoringStatus DeviceMonitoringStatus `json:"monitoring_status"`
-	FirmwareVersion  string                 `json:"firmware_version"`
-	Nickname         string                 `json:"nickname"`
-	Owner            string                 `json:"owner"`
-	// BoundDevices     []string               `json:"bound_devices,omitempty"`
-	// BoundTo          string                 `json:"bound_to"`
-	Temperature int64 `json:"temperature"`
+	ID               string           `json:"id"`
+	Type             Type             `json:"type"`
+	ConnectionStatus ConnectionStatus `json:"connection_status"`
+	MonitoringStatus MonitoringStatus `json:"monitoring_status"`
+	FirmwareVersion  string           `json:"firmware_version"`
+	Nickname         string           `json:"nickname"`
+	Owner            string           `json:"owner"`
 }
 
-type DeviceConfig struct {
+type Config struct {
 	AlertTemperature   int `json:"temperature_alert"`
 	TargetTemperature  int `json:"temperature_target"`
 	WarningTemperature int `json:"temperature_warning"`
