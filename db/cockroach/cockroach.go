@@ -530,14 +530,14 @@ func (cdb *CockroachDB) UpdateDeviceOwner(ctx context.Context, did, uid string) 
 func (cdb *CockroachDB) UpdateDeviceFirmwareVersion(ctx context.Context, did, firmwareVersion string) error {
 	conn, err := cdb.pool.Acquire(ctx)
 	if err != nil {
-		fmt.Println(err)
+
 		return err
 	}
 	defer conn.Release()
 
 	tx, err := conn.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
-		fmt.Println(err)
+
 		return err
 	}
 
@@ -592,14 +592,14 @@ func (cdb *CockroachDB) UpdateDeviceConnectionStatus(ctx context.Context, did st
 func (cdb *CockroachDB) UpdateDeviceMonitoringStatus(ctx context.Context, did string, status device.MonitoringStatus) error {
 	conn, err := cdb.pool.Acquire(ctx)
 	if err != nil {
-		fmt.Println(err)
+
 		return err
 	}
 	defer conn.Release()
 
 	tx, err := conn.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
-		fmt.Println(err)
+
 		return err
 	}
 
@@ -624,14 +624,14 @@ func (cdb *CockroachDB) UpdateDeviceMonitoringStatus(ctx context.Context, did st
 func (cdb *CockroachDB) UpdateDeviceOTAStatus(ctx context.Context, did string, status device.OTAStatus, timestamp int64) error {
 	conn, err := cdb.pool.Acquire(ctx)
 	if err != nil {
-		fmt.Println(err)
+
 		return err
 	}
 	defer conn.Release()
 
 	tx, err := conn.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
-		fmt.Println(err)
+
 		return err
 	}
 
@@ -669,14 +669,14 @@ func (cdb *CockroachDB) UpdateDeviceOTAStatus(ctx context.Context, did string, s
 func (cdb *CockroachDB) CreateDeviceTelemetry(ctx context.Context, did string, data device.Telemetry) error {
 	conn, err := cdb.pool.Acquire(ctx)
 	if err != nil {
-		fmt.Println(err)
+
 		return err
 	}
 	defer conn.Release()
 
 	tx, err := conn.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
-		fmt.Println(err)
+
 		return err
 	}
 
@@ -759,14 +759,12 @@ func (cdb *CockroachDB) CreateManufacturingData(ctx context.Context, md manufact
 func (cdb *CockroachDB) CreateDeviceAndManufacturingData(ctx context.Context, md manufacturing.ManufacturingData) error {
 	conn, err := cdb.pool.Acquire(ctx)
 	if err != nil {
-		fmt.Println(err)
 		return err
 	}
 	defer conn.Release()
 
 	tx, err := conn.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
-		fmt.Println(err)
 		return err
 	}
 
@@ -801,14 +799,14 @@ func (cdb *CockroachDB) CreateDeviceAndManufacturingData(ctx context.Context, md
 func (cdb *CockroachDB) AddAuthAndACLs(ctx context.Context, did, username, password string) error {
 	conn, err := cdb.pool.Acquire(ctx)
 	if err != nil {
-		fmt.Println(err)
+
 		return err
 	}
 	defer conn.Release()
 
 	tx, err := conn.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
-		fmt.Println(err)
+
 		return err
 	}
 
@@ -865,20 +863,20 @@ func (cdb *CockroachDB) AddGatewayACLs(ctx context.Context, gid, did string) err
 
 	auth, err := cdb.GetAuth(ctx, gid)
 	if err != nil {
-		fmt.Println(err)
+
 		return err
 	}
 
 	conn, err := cdb.pool.Acquire(ctx)
 	if err != nil {
-		fmt.Println(err)
+
 		return err
 	}
 	defer conn.Release()
 
 	tx, err := conn.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
-		fmt.Println(err)
+
 		return err
 	}
 
@@ -923,14 +921,14 @@ func (cdb *CockroachDB) DeleteGatewayACLs(ctx context.Context, gid, did string) 
 
 	conn, err := cdb.pool.Acquire(ctx)
 	if err != nil {
-		fmt.Println(err)
+
 		return err
 	}
 	defer conn.Release()
 
 	tx, err := conn.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
-		fmt.Println(err)
+
 		return err
 	}
 
@@ -1130,14 +1128,14 @@ func (cdb *CockroachDB) GetInactiveGatewayDevices(ctx context.Context, qt time.T
 func (cdb *CockroachDB) UpdateLastSeen(ctx context.Context, did string, timestamp time.Time) error {
 	conn, err := cdb.pool.Acquire(ctx)
 	if err != nil {
-		fmt.Println(err)
+
 		return err
 	}
 	defer conn.Release()
 
 	tx, err := conn.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
-		fmt.Println(err)
+
 		return err
 	}
 
