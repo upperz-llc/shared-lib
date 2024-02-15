@@ -3,9 +3,9 @@ package device
 type TelemetryType int
 
 const (
-	DeviceTelemetryTemperature TelemetryType = iota
-	DeviceTelemetryFirmware
-	DeviceTelemetryOTA
+	TelemetryTemperature TelemetryType = iota
+	TelemetryFirmware
+	TelemetryOTA
 )
 
 type Telemetry struct {
