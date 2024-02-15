@@ -110,13 +110,6 @@ type Config struct {
 	Version            int `json:"version"`
 }
 
-type DeviceTelemetry struct {
-	ID          string    `json:"id"`
-	DeviceID    string    `json:"device_id"`
-	Temperature int64     `json:"temperature"`
-	Timestamp   time.Time `json:"timestamp"`
-}
-
 type OTATelemetry struct {
 	Timestamp time.Time `json:"timestamp"`
 	Status    OTAStatus `json:"status"`
