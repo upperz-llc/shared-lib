@@ -75,7 +75,7 @@ func (otas OTAStatus) String() string {
 type Type int
 
 const (
-	WIFI Type = iota - 1
+	WIFI Type = iota
 	GATEWAY
 	GATEWAYDEVICE
 )
@@ -83,7 +83,7 @@ const (
 type MeasurementType int
 
 const (
-	NONE MeasurementType = iota - 1
+	NONE MeasurementType = iota
 	INTERNAL
 	MAX31855
 	MAX31856

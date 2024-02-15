@@ -4,7 +4,7 @@ CREATE TABLE public.user (
   email STRING(100) NULL,
   notification_push BOOL NULL,
   notification_sms BOOL NULL,
-  created_at TIMESTAMPTZ NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT now() NOT NULL,
   updated_at TIMESTAMPTZ NULL
   )
 
