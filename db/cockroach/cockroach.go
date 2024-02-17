@@ -566,7 +566,7 @@ func (cdb *CockroachDB) UpdateDeviceConnectionStatus(ctx context.Context, did st
 		return err
 	}
 
-	query := `UPDATE defaultdb.public.device SET last_seen = @timestamp, connection_status = @connection_status WHERE id = @id`
+	query := `UPDATE defaultdb.public.device SET updated_at = @timestamp, connection_status = @connection_status WHERE id = @id`
 	args := pgx.NamedArgs{
 		"id":                did,
 		"timestamp":         time.Now().Format(time.RFC3339),
