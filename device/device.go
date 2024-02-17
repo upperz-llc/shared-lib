@@ -9,7 +9,7 @@ import (
 type MonitoringStatus int
 
 const (
-	Errored MonitoringStatus = iota - 1
+	Errored MonitoringStatus = iota
 	WaitingForConfiguration
 	Monitoring
 	Alerted
