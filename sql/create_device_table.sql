@@ -6,6 +6,7 @@ CREATE TABLE public.device (
   monitoring_status INT NULL,
   firmware_version STRING(30) NULL,
   "owner" UUID NULL REFERENCES public.user(id),
+  last_seen_at TIMSTAMPTZ NULL,
   created_at TIMESTAMPTZ DEFAULT now() NOT NULL,
   updated_at TIMESTAMPTZ NULL
 )
