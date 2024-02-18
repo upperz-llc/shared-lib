@@ -19,7 +19,7 @@ import (
 )
 
 var once sync.Once
-var db *CockroachDB
+var pool *pgxpool.Pool
 
 type CockroachDB struct {
 	pool *pgxpool.Pool
@@ -793,7 +793,8 @@ func (cdb *CockroachDB) CreateDevice(ctx context.Context, deviceID, username, pa
 	(DEFAULT, @auth_id, @device_id, @topic4, @access, @allowed),
 	(DEFAULT, @auth_id, @device_id, @topic5, @access, @allowed),
 	(DEFAULT, @auth_id, @device_id, @topic6, @access, @allowed),
-	(DEFAULT, @auth_id, @device_id, @topic7, @access, @allowed)`
+	(DEFAULT, @auth_id, @device_id, @topic7, @access, @allowed)
+	(DEFAULT, @auth_id, @device_id, @topic8, @access, @allowed)`
 	args = pgx.NamedArgs{
 		"auth_id":   aid,
 		"device_id": deviceID,
@@ -804,6 +805,7 @@ func (cdb *CockroachDB) CreateDevice(ctx context.Context, deviceID, username, pa
 		"topic5":    fmt.Sprintf("CONFIG/%s/response", deviceID),
 		"topic6":    fmt.Sprintf("STATE/%s", deviceID),
 		"topic7":    fmt.Sprintf("LWT/%s", deviceID),
+		"topic8":    fmt.Sprintf("HEALTHCHECK/%s", deviceID),
 		"access":    "rw",
 		"allowed":   true,
 	}
@@ -1182,8 +1184,8 @@ func (cdb *CockroachDB) UpdateLastSeen(ctx context.Context, did string, timestam
 	return tx.Commit(ctx)
 }
 
-func NewCockroachDB(ctx context.Context) (*CockroachDB, error) {
-
+func NewCockroachDBPool(ctx context.Context) (*pgxpool.Pool, error) {
+	var e error
 	once.Do(func() {
 		dbu := os.Getenv("DB_USERNAME")
 		dbp := os.Getenv("DB_PASS")
@@ -1194,18 +1196,19 @@ func NewCockroachDB(ctx context.Context) (*CockroachDB, error) {
 
 		config, err := pgxpool.ParseConfig(dscs)
 		if err != nil {
-			panic(err)
+			e = err
+			return
 		}
 
-		pool, err := pgxpool.NewWithConfig(ctx, config)
+		p, err := pgxpool.NewWithConfig(ctx, config)
 		if err != nil {
-			panic(err)
+			e = err
+			return
 		}
 
-		db = &CockroachDB{
-			pool: pool,
-		}
+		pool = p
+
 	})
 
-	return db, nil
+	return pool, e
 }
