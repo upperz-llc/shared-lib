@@ -1,7 +1,7 @@
 CREATE TABLE public.device (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   device_type INT NOT NULL,
-  monitoring_type INT NOT NULL,
+  measurement_type INT NOT NULL,
   connection_status INT NOT NULL,
   monitoring_status INT NULL,
   firmware_version STRING(30) NULL,
