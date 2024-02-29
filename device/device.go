@@ -100,6 +100,7 @@ type Device struct {
 	MonitoringStatus MonitoringStatus `json:"monitoring_status"`
 	FirmwareVersion  string           `json:"firmware_version"`
 	Owner            string           `json:"owner"`
+	LastSeenAt       time.Time        `json:"last_seen_at"`
 }
 
 type Config struct {
